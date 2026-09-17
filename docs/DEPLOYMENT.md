@@ -1,0 +1,5 @@
+# Deployment
+
+Use a supported Node version from `package.json`, `npm ci`, and a dedicated PostgreSQL database. Set `APP_ENV` to `staging` or `production` and provide `DATABASE_URL` and `LOG_LEVEL` from the deployment secret manager. The production start script validates environment and database configuration before launching Next.js. For local scripts, copy `.env.example` to the appropriate untracked `.env.<environment>.local` file. Never reuse test, staging, or production credentials across environments.
+
+Run reviewed, versioned migrations with `npm run db:migrate`; then run `npm run db:seed:system`. The seed is idempotent. Run `npm run build` and `npm start`. Probe `/api/health/live` for process liveness and `/api/health/ready` for database readiness. A 503 readiness response must keep the instance out of traffic. `db:rollback` is restricted to test databases and is used to verify reversibility; production recovery uses reviewed forward changes and backups. Hosting, monitoring, secret storage, backups, and operational release procedures will be completed in their assigned phases.
