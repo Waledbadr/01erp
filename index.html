@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Saudi ERP & Accounting Platform</title>
+    <meta name="description" content="Cloud-based Saudi ERP, accounting, inventory, and ZATCA Phase 2 e-invoicing management platform" />
+    <meta property="og:title" content="Saudi ERP & Accounting Platform" />
+    <meta property="og:description" content="Cloud-based Saudi ERP, accounting, inventory, and ZATCA Phase 2 e-invoicing management platform" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      (function() {
+        try {
+          var originalFetch = window.fetch ? window.fetch.bind(window) : null;
+          var customFetch = originalFetch;
+          Object.defineProperty(window, 'fetch', {
+            configurable: true,
+            enumerable: true,
+            get: function() {
+              return customFetch || originalFetch;
+            },
+            set: function(fn) {
+              customFetch = fn;
+            }
+          });
+        } catch (e) {
+          try {
+            var proto = Object.getPrototypeOf(window);
+            if (proto && Object.getOwnPropertyDescriptor(proto, 'fetch')) {
+              var orig = proto.fetch;
+              var cur = orig;
+              Object.defineProperty(proto, 'fetch', {
+                configurable: true,
+                enumerable: true,
+                get: function() { return cur || orig; },
+                set: function(fn) { cur = fn; }
+              });
+            }
+          } catch (err) {}
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

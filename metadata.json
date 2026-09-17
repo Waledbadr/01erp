@@ -1,0 +1,6 @@
+{
+  "name": "Saudi ERP & Accounting Platform",
+  "description": "Cloud-based Saudi ERP, accounting, inventory, and ZATCA Phase 2 e-invoicing management platform",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
