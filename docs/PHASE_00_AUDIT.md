@@ -1,4 +1,4 @@
-# Phase 00 completion audit — 2026-09-17
+# Phase 00 completion audit — updated 2026-09-18
 
 This audit checks the current files and runtime results against 00-MASTER-SYSTEM-PROMPT.md, 01-PHASE-00-FOUNDATION-TOOLING.md, 24-AUDIT-TEMPLATE.md, and the phase exit skill. It is an evidence-based second pass over the repository after implementation. A separate fresh agent session was not available in this task.
 
@@ -20,11 +20,21 @@ This audit checks the current files and runtime results against 00-MASTER-SYSTEM
 - Error paths: localized 404 and a 503 readiness response without a database are verified; a database validation error is rejected. Permission denial, financial idempotency, and cross-tenant isolation are inapplicable because Phase 00 intentionally has no protected or financial endpoint.
 - Failure investigation: initial PostgreSQL 18 Windows initdb crash led to PostgreSQL 17.10; a fixed scratch port was rejected and replaced with a free local port. Playwright's reused stale server served mismatched JavaScript after a build; disabling server reuse and adding a hydration readiness marker fixed the locale test race. A 375px scroll-navigation regression test was added. Lint and type errors found during implementation were fixed and rechecked.
 
+## Committed-state review — 2026-09-18
+
+- Git working tree: clean on master; latest commit bbea63a (Establish Phase 00 foundation and verification).
+- GitHub Actions: .github/workflows/ci.yml parses as YAML, declares push/pull_request triggers and a 14-step verify job. The declared npm scripts exist in package.json; Node 22, PostgreSQL 17, npm ci, migrations up/down/up, build, Vitest, and Playwright are wired. actionlint is unavailable, so no dedicated Actions linter result is claimed.
+- Git remote: none configured (git remote -v produced no entries). No remote CI run or run URL exists.
+- Current route, docs, skills, migration, and test files were inventoried. A scoped runtime/test/workflow scan found no unresolved TODO, FIXME, PLACEHOLDER, NOT IMPLEMENTED, or COMING SOON markers.
+- The Git tree is unchanged from the locally verified commit. The previously recorded successful migration, build, lint, typecheck, unit, E2E, RTL/LTR, and viewport results remain applicable; no heavy test was rerun. This is a new file-based review turn, not a claim that a different agent performed the audit.
+
 ## Verdict
 
-**INCOMPLETE — one external BLOCKER.** The GitHub Actions workflow defines Node 22, PostgreSQL 17, migration up/down/up, unit tests, build, and Playwright, but this repository has no Git remote and the workflow has not run on a CI host. The Phase 00 Definition of Done explicitly requires a unit and Playwright test to pass in CI. A local green run cannot be represented as a CI result. Link this repository to a CI-capable remote, run the workflow, record its URL and result, then repeat this audit and mark Phase 00 COMPLETE only if green.
+**PHASE 00 = INCOMPLETE — one external completion gate remains.**
 
-The separate fresh-session auditor requested by the template is also pending; this file records an adversarial file-and-runtime review within the current task, not a claim of a separate agent review.
+- **Local verification: PASS.** Static checks pass; recorded dynamic checks pass (6 new Vitest tests, 10 Playwright tests, 0 prior-phase regressions). Domain write, permission, and tenant checks are not applicable to the Phase 00 foundation.
+- **Remote CI execution: NOT VERIFIED — no remote repository configured.**
+- **External dependency: GitHub remote/CI execution.** The Phase 00 Definition of Done requires a unit and Playwright test to pass in CI. This requirement cannot be certified from local runs or workflow syntax alone. Configure a remote and run the workflow before marking Phase 00 COMPLETE. No application defect was found in this review.
 
 ## Final dependency verification
 
