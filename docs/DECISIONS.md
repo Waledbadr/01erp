@@ -46,7 +46,7 @@ Playwright starts its own production server on port 3101 and never reuses an exi
 
 ## 2026-09-17 — CI evidence gate
 
-A GitHub Actions workflow is versioned, but no remote or CI execution exists. Keep Phase 00 in progress until the workflow runs and passes; a local pass is not equivalent to a CI result.
+The isolated codex/phase-00-foundation branch is linked to GitHub. Actions run 35372239368 passed at fcf0929 with Node 22, PostgreSQL 17, migrations, tests, and build. The recorded remote result closes the Phase 00 CI evidence gate; local results alone were not used to claim CI success.
 
 ## 2026-09-17 — Development dependency security
 

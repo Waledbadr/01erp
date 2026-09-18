@@ -1,6 +1,6 @@
 # Phase 00 completion audit — updated 2026-09-18
 
-This audit checks the current files and runtime results against 00-MASTER-SYSTEM-PROMPT.md, 01-PHASE-00-FOUNDATION-TOOLING.md, 24-AUDIT-TEMPLATE.md, and the phase exit skill. It is an evidence-based second pass over the repository after implementation. A separate fresh agent session was not available in this task.
+This audit checks the current files and runtime results against 00-MASTER-SYSTEM-PROMPT.md, 01-PHASE-00-FOUNDATION-TOOLING.md, 24-AUDIT-TEMPLATE.md, and the phase exit skill. It is an evidence-based second pass over the repository after implementation. The file-based audit was performed in a later review turn; it was not performed by a different agent.
 
 ## Static verification
 
@@ -22,19 +22,24 @@ This audit checks the current files and runtime results against 00-MASTER-SYSTEM
 
 ## Committed-state review — 2026-09-18
 
-- Git working tree: clean on master; latest commit bbea63a (Establish Phase 00 foundation and verification).
+- Before creating the isolated branch, the local Git tree was at fcf0929. The codex/phase-00-foundation branch was created directly from that commit and pushed without checking out, merging, rebasing, or modifying main.
 - GitHub Actions: .github/workflows/ci.yml parses as YAML, declares push/pull_request triggers and a 14-step verify job. The declared npm scripts exist in package.json; Node 22, PostgreSQL 17, npm ci, migrations up/down/up, build, Vitest, and Playwright are wired. actionlint is unavailable, so no dedicated Actions linter result is claimed.
-- Git remote: none configured (git remote -v produced no entries). No remote CI run or run URL exists.
+- Git remote: origin is https://github.com/Waledbadr/01erp. The isolated branch tracks origin/codex/phase-00-foundation.
 - Current route, docs, skills, migration, and test files were inventoried. A scoped runtime/test/workflow scan found no unresolved TODO, FIXME, PLACEHOLDER, NOT IMPLEMENTED, or COMING SOON markers.
-- The Git tree is unchanged from the locally verified commit. The previously recorded successful migration, build, lint, typecheck, unit, E2E, RTL/LTR, and viewport results remain applicable; no heavy test was rerun. This is a new file-based review turn, not a claim that a different agent performed the audit.
+- The application and test tree is unchanged from the locally verified commit. The successful migration, build, lint, typecheck, unit, E2E, RTL/LTR, and viewport results remain applicable; no heavy local test was rerun. The review examined actual files and the CI job, not solely the previous report.
+
+## Remote CI verification
+
+GitHub Actions [run 35372239368](https://github.com/Waledbadr/01erp/actions/runs/35372239368) completed successfully on codex/phase-00-foundation at fcf0929. The verify job reported success for checkout, Node 22 setup, npm ci, Playwright Chromium installation, PostgreSQL 17 migration up/seed/down/up/seed, typecheck, lint, Vitest, build, and E2E. This is an actual remote run, not an inferred CI result.
 
 ## Verdict
 
-**PHASE 00 = INCOMPLETE — one external completion gate remains.**
+**PHASE 00 = COMPLETE (audited 2026-09-18).**
 
-- **Local verification: PASS.** Static checks pass; recorded dynamic checks pass (6 new Vitest tests, 10 Playwright tests, 0 prior-phase regressions). Domain write, permission, and tenant checks are not applicable to the Phase 00 foundation.
-- **Remote CI execution: NOT VERIFIED — no remote repository configured.**
-- **External dependency: GitHub remote/CI execution.** The Phase 00 Definition of Done requires a unit and Playwright test to pass in CI. This requirement cannot be certified from local runs or workflow syntax alone. Configure a remote and run the workflow before marking Phase 00 COMPLETE. No application defect was found in this review.
+- Static checks: PASS; seven skills, all required docs, live routes, real health endpoints, reversible migration, and zero unresolved production placeholders or dead actions.
+- Dynamic checks: PASS; 6 new Vitest tests and 10 Playwright tests, 0 prior-phase regression tests. Database migration and seed verification, Arabic RTL, English LTR, desktop/tablet/375px mobile checks passed. Remote CI: PASS.
+- Domain audit: PASS for Phase 00 scope. Financial write, permission denial, and tenant isolation checks are not applicable before those later-phase features exist.
+- Deployment: not performed in Phase 00. Later-phase production services and credentials remain declared dependencies.
 
 ## Final dependency verification
 

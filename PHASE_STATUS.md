@@ -1,6 +1,6 @@
 # Phase status
 
-Reviewed 2026-09-18. **Phase 00 = IN PROGRESS (local verification PASS; remote CI NOT VERIFIED).** Phases 01–15 = NOT STARTED. Deployment status: not deployed; no staging or production credentials or host have been supplied.
+Reviewed 2026-09-18. **Phase 00 = COMPLETE (audited; local verification PASS; remote CI PASS).** Phases 01–15 = NOT STARTED. Deployment status: not deployed; no staging or production credentials or host have been supplied.
 
 ## Phase 00 delivered
 
@@ -24,9 +24,9 @@ Reviewed 2026-09-18. **Phase 00 = IN PROGRESS (local verification PASS; remote C
 - Initial locale state produced a React lint violation; replaced it with an external store. A stale reused Playwright server later served incompatible chunks after rebuild; disabled server reuse, used a dedicated test port, and added an explicit hydration marker before locale interaction.
 - Type and lint configuration errors, unapproved embedded PostgreSQL install script, and formatting issues were corrected. A clean install initially hit native binaries locked by orphaned scratch-verifier and stale Next processes; verified project processes were stopped, and the final clean install passed. Vitest worker startup timed out during a concurrent four-command run, then all six tests passed when run alone. Six development dependency advisories were resolved by updating Vitest and overriding esbuild; final audit reports zero. Added checks for logger secret redaction, tax constraint, seed idempotency, readiness with a real DB, and 375px navigation after scroll.
 
-## Declared limitations and external dependencies
+## Audit, deployment, and declared external dependencies
 
-- **Local verification: PASS. Remote CI execution: NOT VERIFIED — no remote repository configured. External dependency: GitHub remote/CI execution.** The workflow parses, its commands match package.json, and the Git working tree is clean at bbea63a. The Definition of Done requires unit and Playwright tests to pass in CI, so Phase 00 remains IN PROGRESS and the audit verdict is INCOMPLETE until a real CI run is green.
-- A new file-based audit pass on 2026-09-18 inspected the committed repository and reused the successful local test evidence without rerunning heavy checks. It was not performed by a different agent; no separate-agent review is claimed.
+- **Local verification: PASS. Remote CI: PASS. Phase 00 audit: COMPLETE.** GitHub Actions run [35372239368](https://github.com/Waledbadr/01erp/actions/runs/35372239368) succeeded on the isolated codex/phase-00-foundation branch at fcf0929. Its Node 22/PostgreSQL 17 job passed npm ci, migration up/down/up, seed, typecheck, lint, 6 Vitest tests, build, and 10 Playwright tests. The local application code has not changed since that run.
+- The completion audit inspected the committed repository in a later review turn and now includes the successful GitHub Actions run. No heavy local tests were rerun. The review was not performed by a different agent; no separate-agent review is claimed.
 - Context7 MCP, Playwright MCP, PostgreSQL MCP, and psql are not installed or available. Official docs, Playwright CLI, and embedded PostgreSQL with node-postgres provided verified equivalents. Superpowers is unavailable; tasks/TASK-*.md is the equivalent convention.
 - Phase 01 will add identity, company membership, permissions, and user-backed locale preference. Phase 00 account pages and slots explicitly defer those functions. Later financial, ZATCA, hosting, backups, and production credentials remain assigned to later phases; none is represented as working now.
