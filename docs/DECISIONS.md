@@ -58,3 +58,26 @@ This document records all principal architectural and technical decisions made f
 - **Context**: Saudi ERP users primarily operate in Arabic with RTL orientation, while accounting and management users frequently require English LTR reporting.
 - **Decision**: Build the UI with complete bidirectional styling using native Tailwind logical utilities (`start-`, `end-`, `ms-`, `me-`) and a centralized translation dictionary with zero hardcoded strings. Locale switching toggles `dir="rtl"` / `dir="ltr"` on the document root immediately without page reloads.
 - **Consequences**: Natural, ergonomic experience for both Arabic and English users.
+
+---
+
+## ADR-009: Treasury, Bank Reconciliation & Cheques Architecture (Phase 08)
+- **Context**: Treasury operations require managing multiple cash drawers, bank accounts, SAMA-compliant IBAN verification, petty cash settlements, multi-line bank statement reconciliations, and customer/supplier cheques lifecycle.
+- **Decision**: 
+  1. All treasury balances are computed dynamically from immutable General Ledger journals (Rule G1), never stored in mutable balance fields.
+  2. Inward customer cheques follow a strict finite-state machine (`RECEIVED` -> `UNDER_COLLECTION` -> `COLLECTED` | `RETURNED` | `CANCELLED`) with automated double-entry journal postings upon transitions.
+  3. Supplier outward cheque functionality is designed with full architectural data schemas and journal templates, but is feature-flagged `OFF` by default (`features.supplierChequesEnabled = false`) until an explicit outward chequebook policy is activated per tenant.
+  4. Bank reconciliations support automated multi-rule matching (date tolerance, reference similarity, amount equality) and one-click adjusting journal entry generation for bank fees and interest.
+- **Consequences**: Robust treasury auditability, zero ledger balance discrepancy, and reliable bank-statement verification.
+
+---
+
+## ADR-010: OCR Supplier Invoice Capture & Honest Provider Architecture (Phase 17)
+- **Context**: Processing supplier invoices requires automated extraction of header fields (Supplier Name, 15-digit VAT number, CR number, Invoice #, Dates, Currency, Subtotals, VAT 15%, Totals) and line items, while strictly obeying accounting safety rules (Rule G1, R1, R2, R3).
+- **Decision**:
+  1. **Strict Non-Auto-Posting**: OCR output is strictly staged as uncommitted job data and creates only a `DRAFT` purchase bill (`source='ocr'`, linked `ocrJobId`) upon explicit human confirmation. Draft bills touch neither the General Ledger nor inventory balances until passed through the formal Phase 06/07 review, 3-way matching, and posting workflow.
+  2. **Confidence Threshold & Blocking (< 0.85)**: Any field extracted with confidence below 0.85 is flagged with a red warning badge, and draft commitment is blocked until the user either manually corrects the value or explicitly confirms accuracy.
+  3. **Full Audit Traceability**: Every manual correction is recorded in an immutable audit trail (`ocr_corrections`) capturing the field name, before value, after value, user ID, and timestamp.
+  4. **Pluggable `OcrProvider` with Honest Not-Configured State**: The OCR pipeline runs behind the `OcrProvider` abstraction. When API keys (e.g. Gemini Vision) are not configured, the adapter reports an explicit `NOT_CONFIGURED` status and keeps jobs pending/unprocessed without ever fabricating fake success.
+- **Consequences**: Complete protection against unauthorized or incorrect ledger postings, high data accuracy, transparent provider management, and full audit compliance.
+

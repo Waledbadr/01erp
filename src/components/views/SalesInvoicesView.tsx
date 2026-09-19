@@ -41,6 +41,8 @@ import {
 } from '../../lib/sales.js';
 import { InvoicePrintTemplate } from '../sales/InvoicePrintTemplate.js';
 import { ZatcaQRCode } from '../ui/ZatcaQRCode.js';
+import { DocumentActionModal } from '../documents/DocumentActionModal.js';
+import { DocumentDataPayload } from '../../lib/documents.js';
 
 interface SalesInvoicesViewProps {
   onNavigate?: (route: string) => void;
@@ -943,6 +945,18 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                               <Eye className="w-4 h-4" />
                             </button>
 
+                            {/* ZATCA Phase 2 Inspector */}
+                            {inv.status === 'POSTED' && onNavigate && (
+                              <button
+                                type="button"
+                                onClick={() => onNavigate('/zatca')}
+                                className="p-1.5 text-slate-600 hover:text-teal-700 hover:bg-slate-100 rounded-md transition-colors"
+                                title={isAr ? 'فحص الامتثال وشهادات هيئة الزكاة (ZATCA)' : 'ZATCA Phase 2 Inspector'}
+                              >
+                                <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                              </button>
+                            )}
+
                             {/* Post to GL if Draft */}
                             {inv.status === 'DRAFT' && (
                               <button
@@ -1788,6 +1802,75 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
             </form>
           </div>
         </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* PHASE 13: UNIFIED DOCUMENT ACTION & PRINTING MODAL */}
+      {/* ========================================================= */}
+      {viewingInvoice && (
+        <DocumentActionModal
+          isOpen={true}
+          onClose={() => setViewingInvoice(null)}
+          document={{
+            documentId: viewingInvoice.id,
+            documentType: 'SALES_INVOICE',
+            documentNumber: viewingInvoice.invoiceNumber,
+            issueDate: viewingInvoice.issueDate,
+            dueDate: viewingInvoice.dueDate,
+            currency: 'SAR',
+            company: {
+              nameAr: 'شركة قمة النماء للتجارة والتقنية',
+              nameEn: 'Qimmat Al-Namaa Trading & Tech Co.',
+              vatNumber: '310123456700003',
+              crNumber: '1010987654',
+              nationalAddress: 'الرياض 12211، طريق الملك فهد، المملكة العربية السعودية',
+              phone: '+966 11 456 7890',
+              email: 'billing@alnamaa.sa',
+              bankAccounts: [
+                { bankName: 'مصرف الراجحي (Al Rajhi Bank)', iban: 'SA0380000000608010167890', accountName: 'شركة قمة النماء للتجارة والتقنية' },
+              ],
+            },
+            party: {
+              partyType: 'CUSTOMER',
+              nameAr: viewingInvoice.customerNameAr,
+              nameEn: viewingInvoice.customerNameEn,
+              vatNumber: viewingInvoice.customerVatNumber,
+              crNumber: viewingInvoice.customerCrNumber,
+              address: viewingInvoice.customerAddress,
+            },
+            lines: (viewingInvoice.lines || []).map((l, i) => ({
+              lineNumber: i + 1,
+              itemCode: l.itemCode || l.itemId,
+              nameAr: l.nameAr || 'صنف مبيعات',
+              nameEn: l.nameEn,
+              quantity: l.quantity,
+              unitName: l.uomName || 'حبه',
+              unitPriceSar: l.unitPriceSar,
+              discountSar: l.discountAmountSar || 0,
+              subtotalSar: l.taxableAmountSar,
+              vatRatePct: l.taxRate || 15,
+              vatAmountSar: l.taxAmountSar || 0,
+              totalSar: l.totalAmountSar,
+            })),
+            totals: {
+              subtotalExclVatSar: viewingInvoice.subtotalSar,
+              discountTotalSar: viewingInvoice.discountTotalSar || 0,
+              taxableAmountSar: viewingInvoice.subtotalSar - (viewingInvoice.discountTotalSar || 0),
+              vatAmountSar: viewingInvoice.taxTotalSar,
+              totalAmountSar: viewingInvoice.totalAmountSar,
+              paidAmountSar: viewingInvoice.paidAmountSar || 0,
+              balanceDueSar: viewingInvoice.remainingAmountSar,
+            },
+            zatca: {
+              qrCodeBase64: viewingInvoice.qrCodeBase64,
+              invoiceHash: viewingInvoice.invoiceHash,
+              cryptographicStamp: viewingInvoice.cryptographicStamp,
+              invoiceTypeCode: viewingInvoice.invoiceType === 'SIMPLIFIED_B2C' ? '0200000' : '0100000',
+              isSimplified: viewingInvoice.invoiceType === 'SIMPLIFIED_B2C',
+            },
+            notes: viewingInvoice.notes,
+          }}
+        />
       )}
     </div>
   );

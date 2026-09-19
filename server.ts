@@ -17,6 +17,17 @@ import { inventoryRouter } from './server/modules/inventory/routes.js';
 import { salesRouter } from './server/modules/sales/routes.js';
 import { purchasingRouter } from './server/modules/purchasing/routes.js';
 import { treasuryRouter } from './server/modules/treasury/routes.js';
+import { zatcaRouter } from './server/modules/zatca/routes.js';
+import { vatRouter } from './server/modules/vat/routes.js';
+import { assetsRouter } from './server/modules/assets/routes.js';
+import { securityRouter } from './server/modules/security/routes.js';
+import { backupsRouter } from './server/modules/backup/routes.js';
+import { reportsRouter } from './server/modules/reports/routes.js';
+import { documentsRouter } from './server/modules/documents/routes.js';
+import { notificationsRouter } from './server/modules/notifications/routes.js';
+import { automationRouter } from './server/modules/automation/routes.js';
+import { posRouter } from './server/modules/pos/routes.js';
+import { ocrRouter } from './server/modules/ocr/routes.js';
 
 async function startServer() {
   const app = express();
@@ -76,7 +87,7 @@ async function startServer() {
       status: isReady ? 'ok' : 'degraded',
       database: dbHealth,
       timestamp: new Date().toISOString(),
-      modulesReady: ['core', 'auth', 'company', 'users', 'superadmin', 'audit', 'accounting', 'inventory', 'sales', 'purchasing', 'treasury'],
+      modulesReady: ['core', 'auth', 'company', 'users', 'superadmin', 'audit', 'accounting', 'inventory', 'sales', 'purchasing', 'treasury', 'assets'],
     });
   });
 
@@ -92,6 +103,28 @@ async function startServer() {
   app.use('/api/v1/sales', salesRouter);
   app.use('/api/v1/purchasing', purchasingRouter);
   app.use('/api/v1/treasury', treasuryRouter);
+  app.use('/api/treasury', treasuryRouter);
+  app.use('/api/v1/zatca', zatcaRouter);
+  app.use('/api/zatca', zatcaRouter);
+  app.use('/api/v1/vat', vatRouter);
+  app.use('/api/vat', vatRouter);
+  app.use('/api/v1/assets', assetsRouter);
+  app.use('/api/assets', assetsRouter);
+  app.use('/api/v1/security', securityRouter);
+  app.use('/api/v1/backups', backupsRouter);
+  app.use('/api/v1/system/backups', backupsRouter);
+  app.use('/api/v1/reports', reportsRouter);
+  app.use('/api/reports', reportsRouter);
+  app.use('/api/v1/documents', documentsRouter);
+  app.use('/api/documents', documentsRouter);
+  app.use('/api/v1/notifications', notificationsRouter);
+  app.use('/api/notifications', notificationsRouter);
+  app.use('/api/v1/automation', automationRouter);
+  app.use('/api/automation', automationRouter);
+  app.use('/api/v1/pos', posRouter);
+  app.use('/api/pos', posRouter);
+  app.use('/api/v1/ocr', ocrRouter);
+  app.use('/api/ocr', ocrRouter);
 
   // 6. Global API Error Handler
   app.use('/api/*', (err: Error, req: Request, res: Response, _next: NextFunction) => {

@@ -132,7 +132,7 @@ describe('PHASE-04 & PHASE-05: Sales Lifecycle, Tax Invoices & ZATCA Phase 2 E-I
   describe('Standard & Simplified Invoices Creation & GL Posting', () => {
     it('creates a standard B2B invoice as draft and posts to GL with exact debits=credits balance', async () => {
       const customers = centralStore.customers.get(tenantId)!;
-      const b2bCust = customers.find((c) => c.type === 'ORGANIZATION') || customers[0];
+      const b2bCust = customers.find((c) => c.type === 'COMPANY' || c.type === 'ESTABLISHMENT') || customers[0];
       const items = centralStore.items.get(tenantId)!;
       const item = items[0];
 
@@ -174,13 +174,14 @@ describe('PHASE-04 & PHASE-05: Sales Lifecycle, Tax Invoices & ZATCA Phase 2 E-I
       const jv = journals.find((j) => j.id === posted.postedJournalId);
       expect(jv).toBeDefined();
 
-      let debits = 0;
-      let credits = 0;
+      let debits = 0n;
+      let credits = 0n;
       for (const line of jv!.lines) {
-        debits += line.debit;
-        credits += line.credit;
+        debits += line.debitCents;
+        credits += line.creditCents;
       }
-      expect(roundHalalas(debits)).toBe(roundHalalas(credits));
+      expect(debits).toBe(credits);
+      expect(debits > 0n).toBe(true);
     });
 
     it('creates a simplified B2C invoice and posts immediately with Mada payment', async () => {
@@ -267,13 +268,14 @@ describe('PHASE-04 & PHASE-05: Sales Lifecycle, Tax Invoices & ZATCA Phase 2 E-I
       const jv = journals.find((j) => j.id === creditNote.postedJournalId);
       expect(jv).toBeDefined();
 
-      let debits = 0;
-      let credits = 0;
+      let debits = 0n;
+      let credits = 0n;
       for (const line of jv!.lines) {
-        debits += line.debit;
-        credits += line.credit;
+        debits += line.debitCents;
+        credits += line.creditCents;
       }
-      expect(roundHalalas(debits)).toBe(roundHalalas(credits));
+      expect(debits).toBe(credits);
+      expect(debits > 0n).toBe(true);
     });
   });
 

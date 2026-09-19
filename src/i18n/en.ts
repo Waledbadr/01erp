@@ -46,6 +46,7 @@ export const en = {
     zatca: 'ZATCA E-Invoicing',
     purchasing: 'Purchasing & Bills',
     treasury: 'Treasury & Payments',
+    vatTax: 'VAT & Tax Engine',
     reports: 'Financial Reports',
     docs: 'Master Docs (14)',
     auditTools: 'Domain Rule Tools',

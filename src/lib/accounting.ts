@@ -57,7 +57,19 @@ export function toHalalas(amountStr: string): bigint {
 /**
  * Convert 4-decimal fixed point back to standard 2-decimal formatted string.
  */
-export function fromHalalasToDisplay(halalas: bigint, decimals: number = 2): string {
+export function fromHalalasToDisplay(halalasVal: bigint | number | string | undefined | null, decimals: number = 2): string {
+  if (halalasVal === undefined || halalasVal === null) return (0).toFixed(decimals);
+  let halalas: bigint;
+  if (typeof halalasVal === 'bigint') {
+    halalas = halalasVal;
+  } else {
+    try {
+      halalas = BigInt(halalasVal);
+    } catch {
+      return (0).toFixed(decimals);
+    }
+  }
+
   const isNegative = halalas < 0n;
   const absVal = isNegative ? -halalas : halalas;
 
@@ -154,3 +166,29 @@ export function formatCurrency(amount: string | number, lang: 'ar' | 'en' = 'ar'
 
   return lang === 'ar' ? `${parts} ر.س` : `SAR ${parts}`;
 }
+
+/**
+ * Halalas Integer Fixed-Point helpers (1 SAR = 100 Halalas).
+ * Standardized across ERP modules for integer math.
+ */
+export function toHalalasInt(amount: number | string): number {
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(num)) return 0;
+  return Math.round((num + Number.EPSILON) * 100);
+}
+
+export function fromHalalasInt(halalas: number): number {
+  return Number((halalas / 100).toFixed(2));
+}
+
+export function roundHalalas(halalas: number): number {
+  return Math.round(halalas);
+}
+
+/**
+ * Rounds a SAR currency value to exact 2 decimal places using half-up method.
+ */
+export function roundSar(amount: number): number {
+  return Number((Math.round((amount + Number.EPSILON) * 100) / 100).toFixed(2));
+}
+

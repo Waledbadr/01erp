@@ -5,31 +5,51 @@ import { JournalEntry, OpeningBalanceEntry } from '../../core/tenantGuard.js';
 
 export const accountingRouter = Router();
 
+function safeBigInt(val: any): bigint {
+  if (val === undefined || val === null) return 0n;
+  if (typeof val === 'bigint') return val;
+  try {
+    return BigInt(val);
+  } catch {
+    return 0n;
+  }
+}
+
 // Helper to serialize BigInt fields safely for JSON responses
 function formatJournalForResponse(j: JournalEntry) {
+  if (!j) return j;
+  const totalDebitCents = safeBigInt(j.totalDebitCents);
+  const totalCreditCents = safeBigInt(j.totalCreditCents);
   return {
     ...j,
-    totalDebitCents: j.totalDebitCents.toString(),
-    totalCreditCents: j.totalCreditCents.toString(),
-    totalDebit: fromHalalasToDisplay(j.totalDebitCents),
-    totalCredit: fromHalalasToDisplay(j.totalCreditCents),
-    lines: j.lines.map((l) => ({
-      ...l,
-      debitCents: l.debitCents.toString(),
-      creditCents: l.creditCents.toString(),
-      debit: fromHalalasToDisplay(l.debitCents),
-      credit: fromHalalasToDisplay(l.creditCents),
-    })),
+    totalDebitCents: totalDebitCents.toString(),
+    totalCreditCents: totalCreditCents.toString(),
+    totalDebit: fromHalalasToDisplay(totalDebitCents),
+    totalCredit: fromHalalasToDisplay(totalCreditCents),
+    lines: (j.lines || []).map((l) => {
+      const debitCents = safeBigInt(l.debitCents);
+      const creditCents = safeBigInt(l.creditCents);
+      return {
+        ...l,
+        debitCents: debitCents.toString(),
+        creditCents: creditCents.toString(),
+        debit: fromHalalasToDisplay(debitCents),
+        credit: fromHalalasToDisplay(creditCents),
+      };
+    }),
   };
 }
 
 function formatOpeningBalanceForResponse(b: OpeningBalanceEntry) {
+  if (!b) return b;
+  const debitCents = safeBigInt(b.debitCents);
+  const creditCents = safeBigInt(b.creditCents);
   return {
     ...b,
-    debitCents: b.debitCents.toString(),
-    creditCents: b.creditCents.toString(),
-    debit: fromHalalasToDisplay(b.debitCents),
-    credit: fromHalalasToDisplay(b.creditCents),
+    debitCents: debitCents.toString(),
+    creditCents: creditCents.toString(),
+    debit: fromHalalasToDisplay(debitCents),
+    credit: fromHalalasToDisplay(creditCents),
   };
 }
 
@@ -397,10 +417,10 @@ accountingRouter.get('/trial-balance', requireAuth, requirePermission('accountin
     let accCredit = 0n;
 
     journals.forEach((j) => {
-      j.lines.forEach((l) => {
+      (j.lines || []).forEach((l) => {
         if (l.accountId === acc.id || l.accountCode === acc.code) {
-          accDebit += l.debitCents;
-          accCredit += l.creditCents;
+          accDebit += safeBigInt(l.debitCents);
+          accCredit += safeBigInt(l.creditCents);
         }
       });
     });
@@ -423,7 +443,7 @@ accountingRouter.get('/trial-balance', requireAuth, requirePermission('accountin
       totalCredit: fromHalalasToDisplay(accCredit),
       netDebit: fromHalalasToDisplay(netDebit),
       netCredit: fromHalalasToDisplay(netCredit),
-      movementCount: journals.filter((j) => j.lines.some((l) => l.accountId === acc.id || l.accountCode === acc.code)).length,
+      movementCount: journals.filter((j) => (j.lines || []).some((l) => l.accountId === acc.id || l.accountCode === acc.code)).length,
     };
   });
 

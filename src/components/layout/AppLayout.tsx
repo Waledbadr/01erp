@@ -20,9 +20,17 @@ import {
   Palette,
   CheckCircle2,
   Users,
+  Percent,
+  FileBarChart,
+  Printer,
+  Calendar,
+  Zap,
+  Store,
+  FileCheck,
 } from 'lucide-react';
 import { useI18n } from '../../i18n/context.js';
 import { Badge } from '../ui/Badge.js';
+import { NotificationAPI, NotificationItem } from '../../lib/notifications.js';
 
 export interface AppLayoutProps {
   children: React.ReactNode;
@@ -41,22 +49,55 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
   const [showBranchMenu, setShowBranchMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadList, setUnreadList] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
 
-  const navigationItems = [
+  React.useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const res = await NotificationAPI.getNotifications({ read: false });
+        setUnreadList(res.notifications.slice(0, 4));
+        setUnreadCount(res.unreadCount);
+      } catch {
+        // silent fallback
+      }
+    };
+    fetchAlerts();
+    const timer = setInterval(fetchAlerts, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  interface NavItem {
+    id: string;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    disabledTag?: string;
+  }
+
+  const navigationItems: NavItem[] = [
     { id: '/', label: t.nav.dashboard, icon: LayoutDashboard },
     { id: '/company-wizard', label: isAr ? 'معالج إعداد المنشأة' : 'Company Wizard', icon: Building2 },
     { id: '/users', label: isAr ? 'المستخدمين والصلاحيات' : 'Users & RBAC', icon: ShieldCheck },
     { id: '/design-system', label: t.nav.designSystem, icon: Palette },
     { id: '/docs', label: t.nav.docs, icon: BookOpen },
     { id: '/audit', label: t.nav.auditTools, icon: ShieldCheck },
+    { id: '/security', label: isAr ? 'الأمان والنسخ الاحتياطي' : 'Security & Backups', icon: ShieldCheck },
     { id: '/roadmap', label: t.nav.roadmap, icon: Milestone },
-    { id: '/accounting', label: t.nav.accounting, icon: FileSpreadsheet, disabledTag: 'Phase 02' },
+    { id: '/accounting', label: t.nav.accounting, icon: FileSpreadsheet },
     { id: '/inventory', label: t.nav.inventory, icon: Boxes },
     { id: '/parties', label: isAr ? 'العملاء والموردين' : 'Customers & Suppliers', icon: Users },
-    { id: '/sales', label: t.nav.sales, icon: FileText, disabledTag: 'Phase 04' },
-    { id: '/zatca', label: t.nav.zatca, icon: ShieldCheck, disabledTag: 'Phase 05' },
-    { id: '/purchasing', label: t.nav.purchasing, icon: ShoppingBag, disabledTag: 'Phase 06' },
-    { id: '/treasury', label: t.nav.treasury, icon: Coins, disabledTag: 'Phase 08' },
+    { id: '/sales', label: t.nav.sales, icon: FileText },
+    { id: '/pos', label: isAr ? 'نقطة البيع (POS الكاشير)' : 'Point of Sale (POS)', icon: Store },
+    { id: '/zatca', label: t.nav.zatca, icon: ShieldCheck },
+    { id: '/purchasing', label: t.nav.purchasing, icon: ShoppingBag },
+    { id: '/ocr', label: isAr ? 'التقاط فواتير الموردين (OCR)' : 'OCR Invoice Capture', icon: FileCheck },
+    { id: '/treasury', label: t.nav.treasury, icon: Coins },
+    { id: '/vat', label: t.nav.vatTax, icon: Percent },
+    { id: '/reports', label: isAr ? 'مركز التقارير (24 تقريراً)' : 'Reports Center (24)', icon: FileBarChart },
+    { id: '/documents', label: isAr ? 'المستندات والطباعة' : 'Documents & Print', icon: Printer },
+    { id: '/notifications', label: isAr ? 'مركز الإشعارات والتنبيهات' : 'Notifications & Alerts', icon: Bell },
+    { id: '/reminders', label: isAr ? 'التحصيل والتذكيرات (G4)' : 'Collections & Reminders (G4)', icon: Calendar },
+    { id: '/automation', label: isAr ? 'محرك الأتمتة وقواعد الأعمال' : 'Automation & Rules', icon: Zap },
   ];
 
   const secondaryNavItems = [
@@ -179,17 +220,94 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                 aria-label="Notifications"
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute top-2 end-2 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+                {unreadCount > 0 ? (
+                  <span className="absolute top-1.5 end-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center ring-2 ring-white">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                ) : (
+                  <span className="absolute top-2 end-2 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white" />
+                )}
               </button>
               {showNotifications && (
-                <div className="absolute end-0 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl z-50">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <span className="text-xs font-bold text-slate-900">{t.common.notifications}</span>
-                    <Badge variant="success" size="sm">1</Badge>
+                <div className="absolute end-0 mt-2 w-80 sm:w-96 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-slate-900">{t.common.notifications}</span>
+                      {unreadCount > 0 && (
+                        <Badge variant="danger" size="sm">
+                          {unreadCount} {isAr ? 'جديد' : 'new'}
+                        </Badge>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => {
+                        setShowNotifications(false);
+                        onRouteChange('/notifications');
+                      }}
+                      className="text-[11px] font-bold text-emerald-700 hover:underline"
+                    >
+                      {isAr ? 'فتح المركز' : 'Open Center'}
+                    </button>
                   </div>
-                  <div className="py-3">
-                    <p className="text-xs font-semibold text-slate-800">جاهزية المرحلة 00</p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">تم توثيق وتفعيل محركات الحسابات وقواعد زاتكا بنجاح.</p>
+
+                  <div className="py-2 divide-y divide-slate-100 max-h-72 overflow-y-auto">
+                    {unreadList.length === 0 ? (
+                      <div className="py-6 text-center text-slate-400">
+                        <CheckCircle2 className="w-6 h-6 mx-auto mb-1 text-emerald-600" />
+                        <p className="text-xs font-semibold text-slate-700">
+                          {isAr ? 'لا توجد إشعارات غير مقروءة' : 'No unread notifications'}
+                        </p>
+                      </div>
+                    ) : (
+                      unreadList.map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => {
+                            setShowNotifications(false);
+                            onRouteChange('/notifications');
+                          }}
+                          className="py-2.5 px-2 hover:bg-slate-50 rounded-xl cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-2 mb-0.5">
+                            <span
+                              className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                item.priority === 'CRITICAL'
+                                  ? 'bg-rose-100 text-rose-700'
+                                  : item.priority === 'HIGH'
+                                  ? 'bg-amber-100 text-amber-700'
+                                  : 'bg-blue-100 text-blue-700'
+                              }`}
+                            >
+                              {item.priority}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              {new Date(item.createdAt).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-xs font-bold text-slate-800 line-clamp-1">
+                            {isAr ? item.titleAr : item.titleEn}
+                          </p>
+                          <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5">
+                            {isAr ? item.messageAr : item.messageEn}
+                          </p>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100 text-center">
+                    <button
+                      onClick={() => {
+                        setShowNotifications(false);
+                        onRouteChange('/notifications');
+                      }}
+                      className="w-full py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-50 rounded-lg transition-colors"
+                    >
+                      {isAr ? 'عرض كافة الإشعارات والتفضيلات' : 'View All Alerts & Preferences'}
+                    </button>
                   </div>
                 </div>
               )}

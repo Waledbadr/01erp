@@ -6,16 +6,31 @@ export const salesRouter = Router();
 salesRouter.get('/status', (req: Request, res: Response) => {
   res.json({
     module: 'sales',
-    version: '2.0.0',
-    phase: 'PHASE-03',
-    supportedInvoices: ['388_STANDARD', '383_SIMPLIFIED'],
-    zatcaCompliance: 'PHASE_2_READY',
+    version: '4.0.0',
+    phase: 'PHASE-04',
+    supportedInvoices: ['388_STANDARD_B2B', '383_SIMPLIFIED_B2C'],
+    lifecycleFeatures: [
+      'QUOTATIONS',
+      'SALES_ORDERS',
+      'TAX_INVOICES',
+      'CREDIT_NOTES_RETURNS',
+      'CUSTOMER_RECEIPTS_FIFO',
+      'CUSTOMER_STATEMENTS',
+      'AGING_REPORT',
+      'DOCUMENT_COPYING',
+      'ZATCA_PHASE_2_READY',
+    ],
+    zatcaCompliance: 'PHASE_2_CLEARED_OR_REPORTED',
     vatRate: 15,
     customerSubaccountControl: '10201',
   });
 });
 
-// 1. List customers with search, filters, and ledger-derived balances
+// =========================================================================
+// 1. CUSTOMERS
+// =========================================================================
+
+// List customers with search, filters, and ledger-derived balances
 salesRouter.get('/customers', requireAuth, requirePermission('sales:customer:view'), (req: Request, res: Response, next: NextFunction) => {
   try {
     const filters = {
@@ -32,7 +47,7 @@ salesRouter.get('/customers', requireAuth, requirePermission('sales:customer:vie
   }
 });
 
-// 2. Export customers as CSV with UTF-8 BOM
+// Export customers as CSV with UTF-8 BOM
 salesRouter.get('/customers/export', requireAuth, requirePermission('sales:customer:view'), (req: Request, res: Response, next: NextFunction) => {
   try {
     const { csv, filename } = req.tenantRepo!.exportParties('CUSTOMER');
@@ -44,7 +59,7 @@ salesRouter.get('/customers/export', requireAuth, requirePermission('sales:custo
   }
 });
 
-// 3. Get customer by ID (with ledger statement and balance)
+// Get customer by ID (with ledger statement and balance)
 salesRouter.get('/customers/:id', requireAuth, requirePermission('sales:customer:view'), (req: Request, res: Response, next: NextFunction) => {
   try {
     const customer = req.tenantRepo!.getCustomerById(req.params.id);
@@ -57,7 +72,7 @@ salesRouter.get('/customers/:id', requireAuth, requirePermission('sales:customer
   }
 });
 
-// 4. Create customer (auto-creates GL subaccount under 10201)
+// Create customer (auto-creates GL subaccount under 10201)
 salesRouter.post('/customers', requireAuth, requirePermission('sales:customer:manage'), (req: Request, res: Response, next: NextFunction) => {
   try {
     const newCustomer = req.tenantRepo!.createCustomer(req.body);
@@ -67,7 +82,7 @@ salesRouter.post('/customers', requireAuth, requirePermission('sales:customer:ma
   }
 });
 
-// 5. Update customer
+// Update customer
 salesRouter.put('/customers/:id', requireAuth, requirePermission('sales:customer:manage'), (req: Request, res: Response, next: NextFunction) => {
   try {
     const updated = req.tenantRepo!.updateCustomer(req.params.id, req.body);
@@ -77,7 +92,7 @@ salesRouter.put('/customers/:id', requireAuth, requirePermission('sales:customer
   }
 });
 
-// 6. Update customer status
+// Update customer status
 salesRouter.patch('/customers/:id/status', requireAuth, requirePermission('sales:customer:manage'), (req: Request, res: Response, next: NextFunction) => {
   try {
     const { status, reason } = req.body;
@@ -88,7 +103,7 @@ salesRouter.patch('/customers/:id/status', requireAuth, requirePermission('sales
   }
 });
 
-// 7. Credit Check Evaluation
+// Credit Check Evaluation
 salesRouter.post('/customers/:id/credit-check', requireAuth, requirePermission('sales:customer:view'), (req: Request, res: Response, next: NextFunction) => {
   try {
     const proposedAmountSar = Number(req.body.proposedAmountSar || 0);
@@ -99,7 +114,19 @@ salesRouter.post('/customers/:id/credit-check', requireAuth, requirePermission('
   }
 });
 
-// 8. Bulk Import Customers
+// Customer Statement (Rule G4)
+salesRouter.get('/customers/:id/statement', requireAuth, requirePermission('sales:customer:view'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
+    const statement = req.tenantRepo!.getCustomerStatement(req.params.id, startDate, endDate);
+    res.json(statement);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Bulk Import Customers
 salesRouter.post('/customers/import', requireAuth, requirePermission('sales:customer:manage'), (req: Request, res: Response, next: NextFunction) => {
   try {
     const { mode, rows } = req.body;
@@ -114,7 +141,7 @@ salesRouter.post('/customers/import', requireAuth, requirePermission('sales:cust
   }
 });
 
-// 9. Rollback Batch Import
+// Rollback Batch Import
 salesRouter.post('/customers/rollback-import', requireAuth, requirePermission('settings:company:manage'), (req: Request, res: Response, next: NextFunction) => {
   try {
     const { batchId } = req.body;
@@ -125,9 +152,9 @@ salesRouter.post('/customers/rollback-import', requireAuth, requirePermission('s
   }
 });
 
-// ==========================================
-// 10. SALES INVOICES (STANDARD B2B & SIMPLIFIED B2C)
-// ==========================================
+// =========================================================================
+// 2. SALES INVOICES (STANDARD B2B & SIMPLIFIED B2C)
+// =========================================================================
 
 // List Invoices with search and filters
 salesRouter.get('/invoices', requireAuth, requirePermission('sales:invoice:view'), (req: Request, res: Response, next: NextFunction) => {
@@ -139,6 +166,7 @@ salesRouter.get('/invoices', requireAuth, requirePermission('sales:invoice:view'
       customerId: req.query.customerId as string,
       startDate: req.query.startDate as string,
       endDate: req.query.endDate as string,
+      salesRep: req.query.salesRep as string,
     };
     const invoices = req.tenantRepo!.getSalesInvoices(filters);
     res.json(invoices);
@@ -180,18 +208,111 @@ salesRouter.post('/invoices/:id/post', requireAuth, requirePermission('sales:inv
   }
 });
 
-// ==========================================
-// 11. SALES QUOTATIONS (عروض الأسعار)
-// ==========================================
+// Update Invoice Status (e.g., SUBMITTED, APPROVED)
+salesRouter.patch('/invoices/:id/status', requireAuth, requirePermission('sales:invoice:create'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { status } = req.body;
+    const updated = req.tenantRepo!.updateSalesInvoiceStatus(req.params.id, status);
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Cancel Draft Invoice
+salesRouter.post('/invoices/:id/cancel', requireAuth, requirePermission('sales:invoice:create'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { reason } = req.body;
+    const cancelled = req.tenantRepo!.cancelSalesInvoice(req.params.id, reason);
+    res.json(cancelled);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =========================================================================
+// 3. SALES ORDERS (أوامر البيع)
+// =========================================================================
+
+salesRouter.get('/orders', requireAuth, requirePermission('sales:invoice:view'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const filters = {
+      search: req.query.search as string,
+      status: req.query.status as string,
+      customerId: req.query.customerId as string,
+    };
+    const orders = req.tenantRepo!.getSalesOrders(filters);
+    res.json(orders);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.get('/orders/:id', requireAuth, requirePermission('sales:invoice:view'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const order = req.tenantRepo!.getSalesOrderById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ error: 'Sales Order not found' });
+    }
+    res.json(order);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.post('/orders', requireAuth, requirePermission('sales:invoice:create'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const order = req.tenantRepo!.createSalesOrder(req.body);
+    res.status(201).json(order);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.patch('/orders/:id/status', requireAuth, requirePermission('sales:invoice:create'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { status } = req.body;
+    const updated = req.tenantRepo!.updateSalesOrderStatus(req.params.id, status);
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.post('/orders/:id/convert-to-invoice', requireAuth, requirePermission('sales:invoice:create'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const invoice = await req.tenantRepo!.convertSalesOrderToInvoice(req.params.id);
+    res.status(201).json(invoice);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =========================================================================
+// 4. SALES QUOTATIONS (عروض الأسعار)
+// =========================================================================
 
 salesRouter.get('/quotations', requireAuth, requirePermission('sales:invoice:view'), (req: Request, res: Response, next: NextFunction) => {
   try {
     const filters = {
       search: req.query.search as string,
       status: req.query.status as string,
+      customerId: req.query.customerId as string,
     };
     const quotations = req.tenantRepo!.getSalesQuotations(filters);
     res.json(quotations);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.get('/quotations/:id', requireAuth, requirePermission('sales:invoice:view'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const quotation = req.tenantRepo!.getSalesQuotationById(req.params.id);
+    if (!quotation) {
+      return res.status(404).json({ error: 'Quotation not found' });
+    }
+    res.json(quotation);
   } catch (err) {
     next(err);
   }
@@ -206,6 +327,25 @@ salesRouter.post('/quotations', requireAuth, requirePermission('sales:invoice:cr
   }
 });
 
+salesRouter.patch('/quotations/:id/status', requireAuth, requirePermission('sales:invoice:create'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { status } = req.body;
+    const updated = req.tenantRepo!.updateSalesQuotationStatus(req.params.id, status);
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.post('/quotations/:id/convert-to-order', requireAuth, requirePermission('sales:invoice:create'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const order = req.tenantRepo!.convertQuotationToOrder(req.params.id);
+    res.status(201).json(order);
+  } catch (err) {
+    next(err);
+  }
+});
+
 salesRouter.post('/quotations/:id/convert', requireAuth, requirePermission('sales:invoice:create'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const invoice = await req.tenantRepo!.convertQuotationToInvoice(req.params.id);
@@ -215,18 +355,31 @@ salesRouter.post('/quotations/:id/convert', requireAuth, requirePermission('sale
   }
 });
 
-// ==========================================
-// 12. CREDIT NOTES (إشعارات دائنة)
-// ==========================================
+// =========================================================================
+// 5. CREDIT NOTES & RETURNS (إشعارات دائنة ومردودات مبيعات)
+// =========================================================================
 
 salesRouter.get('/credit-notes', requireAuth, requirePermission('sales:invoice:view'), (req: Request, res: Response, next: NextFunction) => {
   try {
     const filters = {
       search: req.query.search as string,
       originalInvoiceId: req.query.originalInvoiceId as string,
+      customerId: req.query.customerId as string,
     };
     const notes = req.tenantRepo!.getSalesCreditNotes(filters);
     res.json(notes);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.get('/credit-notes/:id', requireAuth, requirePermission('sales:invoice:view'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const note = req.tenantRepo!.getSalesCreditNoteById(req.params.id);
+    if (!note) {
+      return res.status(404).json({ error: 'Credit note not found' });
+    }
+    res.json(note);
   } catch (err) {
     next(err);
   }
@@ -241,4 +394,73 @@ salesRouter.post('/credit-notes', requireAuth, requirePermission('sales:invoice:
   }
 });
 
+// =========================================================================
+// 6. CUSTOMER RECEIPTS & ALLOCATIONS (سندات القبض ومطابقة الدفعات - Rule G5)
+// =========================================================================
 
+salesRouter.get('/receipts', requireAuth, requirePermission('sales:invoice:view'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const filters = {
+      search: req.query.search as string,
+      customerId: req.query.customerId as string,
+    };
+    const receipts = req.tenantRepo!.getCustomerReceipts(filters);
+    res.json(receipts);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.get('/receipts/:id', requireAuth, requirePermission('sales:invoice:view'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const receipt = req.tenantRepo!.getCustomerReceiptById(req.params.id);
+    if (!receipt) {
+      return res.status(404).json({ error: 'Customer receipt not found' });
+    }
+    res.json(receipt);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.post('/receipts', requireAuth, requirePermission('sales:invoice:create'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const receipt = await req.tenantRepo!.createCustomerReceipt(req.body);
+    res.status(201).json(receipt);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.post('/receipts/:id/reallocate', requireAuth, requirePermission('sales:invoice:create'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { newAllocations } = req.body;
+    const reallocated = req.tenantRepo!.reallocateCustomerReceipt(req.params.id, newAllocations || []);
+    res.json(reallocated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =========================================================================
+// 7. AGING REPORTS & DOCUMENT DUPLICATION
+// =========================================================================
+
+salesRouter.get('/aging', requireAuth, requirePermission('sales:customer:view'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const report = req.tenantRepo!.getCustomerAging();
+    res.json(report);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.post('/copy-document', requireAuth, requirePermission('sales:invoice:create'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { sourceType, sourceId } = req.body;
+    const copied = await req.tenantRepo!.copySalesDocument({ sourceType, sourceId });
+    res.status(201).json(copied);
+  } catch (err) {
+    next(err);
+  }
+});

@@ -390,4 +390,304 @@ describe('PHASE-03: Product Master, Multi-UOM, Barcode Identity & Multi-Warehous
       expect(brand.countryOfOrigin).toBe('Switzerland');
     });
   });
+
+  // ====================================================
+  // 6. GLOBAL UNITS CATALOG & MULTI-UOM HIERARCHY
+  // ====================================================
+  describe('Global Units Catalog & Packaging Standards', () => {
+    it('returns seeded global units catalog and allows creating custom units', () => {
+      const catalog = adminRepo.getUnitsCatalog();
+      expect(catalog.length).toBeGreaterThanOrEqual(8);
+
+      const pce = catalog.find((u) => u.code === 'PCE');
+      expect(pce).toBeDefined();
+      expect(pce!.nameAr).toBe('قطعة / حبة');
+
+      const customUnit = adminRepo.createGlobalUnit({
+        code: 'DRUM200',
+        nameAr: 'برميل 200 لتر',
+        nameEn: '200L Drum',
+        symbolAr: 'برميل',
+        category: 'VOLUME',
+      });
+
+      expect(customUnit.id).toBeDefined();
+      expect(customUnit.code).toBe('DRUM200');
+
+      const updated = adminRepo.updateGlobalUnit(customUnit.id, {
+        nameEn: 'Standard 200L Industrial Drum',
+      });
+      expect(updated.nameEn).toBe('Standard 200L Industrial Drum');
+    });
+
+    it('rejects creating duplicate unit code in the catalog', () => {
+      expect(() => {
+        adminRepo.createGlobalUnit({
+          code: 'PCE',
+          nameAr: 'قطعة مكررة',
+        });
+      }).toThrow(ConflictError);
+    });
+  });
+
+  // ====================================================
+  // 7. ALIAS BARCODES & HIGH-PERFORMANCE SEARCH
+  // ====================================================
+  describe('Alias Barcodes & Sub-300ms SLA Item Search', () => {
+    it('supports item barcode aliases and unit alias barcodes', () => {
+      const item = adminRepo.createItem({
+        sku: 'OIL-SYN-5W30',
+        primaryBarcode: '628900111222',
+        barcodeAliases: ['628900111223', '628900111224'],
+        nameAr: 'زيت محرك تخليقي بالكامل 5W-30',
+        nameEn: 'Full Synthetic Engine Oil 5W-30',
+        baseUnit: 'علبة 1 لتر',
+        sellingPrice: 45.0,
+        cost: 28.0,
+        units: [
+          {
+            nameAr: 'علبة 1 لتر',
+            conversionFactor: 1.0,
+            barcode: '628900111222',
+            aliasBarcodes: ['ALT-CAN-01', 'ALT-CAN-02'],
+            isBaseUnit: true,
+            salePrice: 45.0,
+            cost: 28.0,
+          },
+          {
+            nameAr: 'كرتون 12 علبة',
+            conversionFactor: 12.0,
+            barcode: '628900111333',
+            aliasBarcodes: ['ALT-CTN-12'],
+            isBaseUnit: false,
+            salePrice: 480.0,
+            cost: 336.0,
+          },
+        ],
+      });
+
+      // 1. Resolve by primary barcode
+      const resPrimary = adminRepo.resolveBarcode('628900111222');
+      expect(resPrimary).not.toBeNull();
+      expect(resPrimary!.item.id).toBe(item.id);
+      expect(resPrimary!.unit.nameAr).toBe('علبة 1 لتر');
+
+      // 2. Resolve by unit alias barcode
+      const resUnitAlias = adminRepo.resolveBarcode('ALT-CAN-02');
+      expect(resUnitAlias).not.toBeNull();
+      expect(resUnitAlias!.unit.nameAr).toBe('علبة 1 لتر');
+
+      // 3. Resolve by carton alias barcode
+      const resCtnAlias = adminRepo.resolveBarcode('ALT-CTN-12');
+      expect(resCtnAlias).not.toBeNull();
+      expect(resCtnAlias!.unit.nameAr).toBe('كرتون 12 علبة');
+      expect(resCtnAlias!.salePrice).toBe(480.0);
+
+      // 4. Resolve by item-level alias
+      const resItemAlias = adminRepo.resolveBarcode('628900111223');
+      expect(resItemAlias).not.toBeNull();
+      expect(resItemAlias!.item.id).toBe(item.id);
+
+      // 5. Fast search across SKU, Name, and Barcode Aliases
+      const searchByAlias = adminRepo.searchItems('ALT-CTN-12');
+      expect(searchByAlias.length).toBe(1);
+      expect(searchByAlias[0].id).toBe(item.id);
+
+      const searchByName = adminRepo.searchItems('تخليقي');
+      expect(searchByName.length).toBe(1);
+      expect(searchByName[0].sku).toBe('OIL-SYN-5W30');
+    });
+
+    it('enforces Rule I4 across alias barcodes preventing duplication', () => {
+      adminRepo.createItem({
+        sku: 'ITEM-ALPHA',
+        primaryBarcode: '628000111001',
+        nameAr: 'صنف أ',
+        baseUnit: 'حبة',
+        sellingPrice: 10,
+        cost: 5,
+        units: [
+          {
+            nameAr: 'حبة',
+            conversionFactor: 1,
+            barcode: '628000111001',
+            aliasBarcodes: ['GLOBAL-ALIAS-77'],
+            isBaseUnit: true,
+            salePrice: 10,
+          },
+        ],
+      });
+
+      // Trying to reuse GLOBAL-ALIAS-77 on another item must throw ConflictError
+      expect(() => {
+        adminRepo.createItem({
+          sku: 'ITEM-BETA',
+          primaryBarcode: '628000111002',
+          nameAr: 'صنف ب',
+          baseUnit: 'حبة',
+          sellingPrice: 15,
+          cost: 8,
+          units: [
+            {
+              nameAr: 'حبة',
+              conversionFactor: 1,
+              barcode: '628000111002',
+              aliasBarcodes: ['GLOBAL-ALIAS-77'],
+              isBaseUnit: true,
+              salePrice: 15,
+            },
+          ],
+        });
+      }).toThrow(ConflictError);
+    });
+  });
+
+  // ====================================================
+  // 8. MULTI-TIER PRICING ENGINE & RESOLUTION HIERARCHY
+  // ====================================================
+  describe('Multi-Tier Pricing Engine & Resolution Hierarchy', () => {
+    it('resolves price according to strict hierarchy (Override > Customer Rule > Price List > Default)', () => {
+      const item = adminRepo.createItem({
+        sku: 'COFFEE-PREMIUM',
+        primaryBarcode: '628777000111',
+        nameAr: 'قهوة مختصة حبوب كاملة 1 كجم',
+        baseUnit: 'كيس 1 كجم',
+        sellingPrice: 85.0,
+        wholesalePrice: 70.0,
+        cost: 45.0,
+        units: [
+          {
+            nameAr: 'كيس 1 كجم',
+            conversionFactor: 1,
+            barcode: '628777000111',
+            isBaseUnit: true,
+            salePrice: 85.0,
+            wholesalePrice: 70.0,
+          },
+        ],
+      });
+
+      // Tier 1: Default Unit Price
+      const tier1 = adminRepo.resolveItemPrice({
+        itemId: item.id,
+      });
+      expect(tier1.appliedSource).toBe('DEFAULT_UNIT_PRICE');
+      expect(tier1.unitPrice).toBe(85.0);
+      expect(tier1.netUnitPrice).toBe(85.0);
+      expect(tier1.taxRate).toBe(15);
+      expect(tier1.vatAmount).toBe(12.75);
+      expect(tier1.totalAmount).toBe(85.0);
+      expect(tier1.totalAmountWithVat).toBe(97.75);
+
+      // Tier 2: Wholesale Price List
+      const tier2 = adminRepo.resolveItemPrice({
+        itemId: item.id,
+        priceList: 'WHOLESALE',
+      });
+      expect(tier2.appliedSource).toBe('PRICE_LIST');
+      expect(tier2.unitPrice).toBe(70.0);
+      expect(tier2.netUnitPrice).toBe(70.0);
+
+      // Tier 3: Customer-Specific Pricing Rule
+      const customer = adminRepo.createCustomer({
+        nameAr: 'شركة الرواد للتجارة',
+        nameEn: 'Al-Rowad Trading',
+        vatNumber: '310123456700003',
+        customerType: 'B2B',
+        mobile: '+966501234567',
+        paymentTermsDays: 30,
+        creditLimitSar: 50000,
+        nationalAddress: {
+          buildingNumber: '1234',
+          streetNameAr: 'طريق الملك فهد',
+          districtAr: 'العليا',
+          cityAr: 'الرياض',
+          postalCode: '12211',
+        },
+      });
+      const customerId = customer.id;
+
+      adminRepo.createCustomerPriceRule({
+        customerId,
+        itemId: item.id,
+        unitPrice: 65.0,
+        discountPercentage: 10, // 10% off the 65 SAR special price -> 58.50 SAR
+        minQuantity: 5,
+      });
+
+      // When quantity is below minimum (qty = 2), customer rule should NOT apply
+      const belowMin = adminRepo.resolveItemPrice({
+        customerId,
+        itemId: item.id,
+        quantity: 2,
+      });
+      expect(belowMin.appliedSource).toBe('DEFAULT_UNIT_PRICE');
+      expect(belowMin.netUnitPrice).toBe(85.0);
+
+      // When quantity meets minimum (qty = 5), customer rule APPLIES
+      const customerPricing = adminRepo.resolveItemPrice({
+        customerId,
+        itemId: item.id,
+        quantity: 5,
+      });
+      expect(customerPricing.appliedSource).toBe('CUSTOMER_RULE');
+      expect(customerPricing.unitPrice).toBe(65.0);
+      expect(customerPricing.discountPercentage).toBe(10);
+      expect(customerPricing.discountAmount).toBe(6.5);
+      expect(customerPricing.netUnitPrice).toBe(58.5);
+      expect(customerPricing.lineSubtotal).toBe(292.5); // 58.50 * 5
+
+      // Tier 4: Manual Override (takes highest precedence)
+      const manualOverride = adminRepo.resolveItemPrice({
+        customerId,
+        itemId: item.id,
+        quantity: 5,
+        manualOverridePrice: 50.0,
+      });
+      expect(manualOverride.appliedSource).toBe('MANUAL_OVERRIDE');
+      expect(manualOverride.netUnitPrice).toBe(50.0);
+      expect(manualOverride.lineSubtotal).toBe(250.0);
+    });
+  });
+
+  // ====================================================
+  // 9. PRICE AUDIT TRAIL
+  // ====================================================
+  describe('Price Audit Trail & Historical Tracking', () => {
+    it('automatically records price history on item creation and subsequent price changes', () => {
+      const item = adminRepo.createItem({
+        sku: 'AUDIT-ITEM-01',
+        primaryBarcode: '628555111222',
+        nameAr: 'صنف خاضع للتدقيق السعري',
+        baseUnit: 'حبة',
+        sellingPrice: 100.0,
+        cost: 60.0,
+        units: [
+          {
+            nameAr: 'حبة',
+            conversionFactor: 1,
+            barcode: '628555111222',
+            isBaseUnit: true,
+            salePrice: 100.0,
+          },
+        ],
+      });
+
+      const initialHistory = adminRepo.getItemPriceHistory(item.id);
+      expect(initialHistory.length).toBe(1);
+      expect(initialHistory[0].newPrice).toBe(100.0);
+      expect(initialHistory[0].reason.toLowerCase()).toContain('initial');
+
+      // Update selling price
+      adminRepo.updateItem(item.id, {
+        sellingPrice: 120.0,
+      });
+
+      const updatedHistory = adminRepo.getItemPriceHistory(item.id);
+      expect(updatedHistory.length).toBe(2);
+      expect(updatedHistory[1].oldPrice).toBe(100.0);
+      expect(updatedHistory[1].newPrice).toBe(120.0);
+      expect(updatedHistory[1].changedBy).toBe('admin@al-inma.sa');
+    });
+  });
 });

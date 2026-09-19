@@ -410,4 +410,247 @@ export const batchImportsTable = pgTable('batch_imports', {
   index('batch_imports_tenant_idx').on(table.tenantId),
 ]);
 
+// ==========================================
+// 12. STOCK MOVEMENTS & INVENTORY ENGINE (PHASE-05)
+// ==========================================
+export const warehouseStocksTable = pgTable('warehouse_stocks', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenantsTable.id).notNull(),
+  warehouseId: uuid('warehouse_id').references(() => warehousesTable.id).notNull(),
+  itemId: uuid('item_id').references(() => itemsTable.id).notNull(),
+  currentStockBaseQty: integer('current_stock_base_qty').default(0).notNull(),
+  reservedQty: integer('reserved_qty').default(0).notNull(),
+  availableQty: integer('available_qty').default(0).notNull(),
+  currentWac: integer('current_wac').default(0).notNull(), // in Halalas (cents)
+  totalValuation: bigint('total_valuation', { mode: 'bigint' }).default(0n).notNull(),
+  binLocation: text('bin_location'),
+  lastReceiptDate: text('last_receipt_date'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('wh_stocks_tenant_idx').on(table.tenantId),
+  uniqueIndex('wh_stocks_unique_item_wh').on(table.tenantId, table.warehouseId, table.itemId),
+]);
+
+export const stockMovementsTable = pgTable('stock_movements', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenantsTable.id).notNull(),
+  warehouseId: uuid('warehouse_id').references(() => warehousesTable.id).notNull(),
+  itemId: uuid('item_id').references(() => itemsTable.id).notNull(),
+  movementType: text('movement_type').notNull(), // OPENING_STOCK, PURCHASE_RECEIPT, PURCHASE_RETURN, SALES_ISSUE, SALES_RETURN, TRANSFER_OUT, TRANSFER_IN, ADJUSTMENT_IN, ADJUSTMENT_OUT, STOCKTAKE_VARIANCE, SCRAP_OR_LOSS
+  quantityDelta: integer('quantity_delta').notNull(), // in base units (+ or -)
+  unitCostApplied: integer('unit_cost_applied').notNull(), // in halalas
+  resultingWac: integer('resulting_wac').notNull(), // in halalas
+  valueDelta: bigint('value_delta', { mode: 'bigint' }).notNull(), // in halalas
+  resultingStock: integer('resulting_stock').notNull(), // in base units
+  sourceType: text('source_type').notNull(), // MANDATORY (I1/I5): PURCHASE_BILL, SALES_INVOICE, STOCK_TRANSFER, STOCK_ADJUSTMENT, STOCKTAKE, OPENING_STOCK
+  sourceId: text('source_id').notNull(), // MANDATORY: FK or external source identifier
+  sourceDocumentNumber: text('source_document_number'),
+  journalId: uuid('journal_id').references(() => journalEntriesTable.id),
+  reason: text('reason'),
+  notes: text('notes'),
+  batchNumber: text('batch_number'),
+  serialNumber: text('serial_number'),
+  userId: uuid('user_id').references(() => usersTable.id),
+  userEmail: text('user_email').notNull(),
+  movementDate: text('movement_date').notNull(), // YYYY-MM-DD
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('stock_mov_tenant_idx').on(table.tenantId),
+  index('stock_mov_item_idx').on(table.tenantId, table.itemId),
+  index('stock_mov_warehouse_idx').on(table.tenantId, table.warehouseId),
+  index('stock_mov_source_idx').on(table.tenantId, table.sourceType, table.sourceId),
+  index('stock_mov_date_idx').on(table.tenantId, table.movementDate),
+]);
+
+export const stockTransfersTable = pgTable('stock_transfers', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenantsTable.id).notNull(),
+  transferNumber: text('transfer_number').notNull(), // TRF-YYYY-XXXXX
+  fromWarehouseId: uuid('from_warehouse_id').references(() => warehousesTable.id).notNull(),
+  toWarehouseId: uuid('to_warehouse_id').references(() => warehousesTable.id).notNull(),
+  status: text('status').default('COMPLETED').notNull(), // DRAFT, IN_TRANSIT, COMPLETED, CANCELLED
+  transferDate: text('transfer_date').notNull(),
+  lines: jsonb('lines').notNull(), // [{ itemId, unitId, quantity, baseQuantity, unitCost, totalValue }]
+  totalValueSar: integer('total_value_sar').default(0).notNull(),
+  notes: text('notes'),
+  createdBy: uuid('created_by').references(() => usersTable.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('transfers_tenant_idx').on(table.tenantId),
+  uniqueIndex('transfers_num_idx').on(table.tenantId, table.transferNumber),
+]);
+
+export const stockAdjustmentsTable = pgTable('stock_adjustments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenantsTable.id).notNull(),
+  adjustmentNumber: text('adjustment_number').notNull(), // ADJ-YYYY-XXXXX
+  warehouseId: uuid('warehouse_id').references(() => warehousesTable.id).notNull(),
+  status: text('status').default('APPROVED').notNull(), // DRAFT, PENDING_APPROVAL, APPROVED, REJECTED
+  adjustmentDate: text('adjustment_date').notNull(),
+  reasonCode: text('reason_code').notNull(), // DAMAGE, WASTE, LOSS, EXPIRY, FOUND_GOODS, CORRECTION
+  description: text('description').notNull(),
+  lines: jsonb('lines').notNull(), // [{ itemId, unitId, quantityDelta, baseQuantityDelta, unitCost, totalValueDelta, reason }]
+  journalId: uuid('journal_id').references(() => journalEntriesTable.id),
+  approvedBy: uuid('approved_by').references(() => usersTable.id),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  createdBy: uuid('created_by').references(() => usersTable.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('adjustments_tenant_idx').on(table.tenantId),
+  uniqueIndex('adjustments_num_idx').on(table.tenantId, table.adjustmentNumber),
+]);
+
+export const stocktakesTable = pgTable('stocktakes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenantsTable.id).notNull(),
+  stocktakeNumber: text('stocktake_number').notNull(), // STK-YYYY-XXXXX
+  warehouseId: uuid('warehouse_id').references(() => warehousesTable.id).notNull(),
+  scopeType: text('scope_type').notNull(), // FULL_WAREHOUSE, BY_CATEGORY, BY_ITEMS
+  categoryId: uuid('category_id'),
+  status: text('status').default('DRAFT').notNull(), // DRAFT, IN_PROGRESS, REVIEW, APPROVED, CANCELLED
+  snapshotDate: text('snapshot_date').notNull(),
+  entries: jsonb('entries').notNull(), // [{ itemId, itemNameAr, sku, baseUnit, systemBookQty, countedQty, varianceQty, unitWac, varianceValueSar }]
+  totalPositiveVarianceSar: integer('total_positive_variance_sar').default(0).notNull(),
+  totalNegativeVarianceSar: integer('total_negative_variance_sar').default(0).notNull(),
+  netVarianceSar: integer('net_variance_sar').default(0).notNull(),
+  journalId: uuid('journal_id').references(() => journalEntriesTable.id),
+  approvedBy: uuid('approved_by').references(() => usersTable.id),
+  approvedAt: timestamp('approved_at', { withTimezone: true }),
+  createdBy: uuid('created_by').references(() => usersTable.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('stocktakes_tenant_idx').on(table.tenantId),
+  uniqueIndex('stocktakes_num_idx').on(table.tenantId, table.stocktakeNumber),
+]);
+
+export const landedCostDocumentsTable = pgTable('landed_cost_documents', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenantsTable.id).notNull(),
+  documentNumber: text('document_number').notNull(), // LC-YYYY-XXXXX
+  sourceBillId: text('source_bill_id').notNull(), // Purchase receipt or bill ID
+  sourceBillNumber: text('source_bill_number').notNull(),
+  status: text('status').default('POSTED').notNull(),
+  allocationMethod: text('allocation_method').notNull(), // QUANTITY, VALUE, WEIGHT, VOLUME, PERCENTAGE, MANUAL
+  costLines: jsonb('cost_lines').notNull(), // [{ type: FREIGHT | CUSTOMS | CLEARANCE | INSURANCE | HANDLING | OTHER, amountSar, description }]
+  totalLandedCostSar: integer('total_landed_cost_sar').notNull(),
+  allocations: jsonb('allocations').notNull(), // [{ itemId, itemNameAr, quantity, basePrice, allocatedAmount, effectiveUnitCost }]
+  journalId: uuid('journal_id').references(() => journalEntriesTable.id),
+  createdBy: uuid('created_by').references(() => usersTable.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('landed_cost_tenant_idx').on(table.tenantId),
+  uniqueIndex('landed_cost_num_idx').on(table.tenantId, table.documentNumber),
+]);
+
+export const unitsCatalogTable = pgTable('units_catalog', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenantsTable.id).notNull(),
+  code: text('code').notNull(), // PCE, BOX, CTN, KG, etc.
+  nameAr: text('name_ar').notNull(),
+  nameEn: text('name_en').notNull(),
+  symbolAr: text('symbol_ar').notNull(),
+  symbolEn: text('symbol_en').notNull(),
+  category: text('category').notNull(), // COUNT, WEIGHT, VOLUME, LENGTH, AREA, OTHER
+  isSystem: boolean('is_system').default(false).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('units_catalog_tenant_idx').on(table.tenantId),
+  uniqueIndex('units_catalog_tenant_code_idx').on(table.tenantId, table.code),
+]);
+
+export const warehousesTable = pgTable('warehouses', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenantsTable.id).notNull(),
+  branchId: uuid('branch_id').references(() => branchesTable.id),
+  code: text('code').notNull(), // WH-01
+  nameAr: text('name_ar').notNull(),
+  nameEn: text('name_en').notNull(),
+  address: text('address'),
+  managerName: text('manager_name'),
+  contactPhone: text('contact_phone'),
+  isDefault: boolean('is_default').default(false).notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  bins: jsonb('bins'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('warehouses_tenant_idx').on(table.tenantId),
+  uniqueIndex('warehouses_tenant_code_idx').on(table.tenantId, table.code),
+]);
+
+export const itemsTable = pgTable('items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenantsTable.id).notNull(),
+  sku: text('sku').notNull(),
+  primaryBarcode: text('primary_barcode').notNull(),
+  nameAr: text('name_ar').notNull(),
+  nameEn: text('name_en').notNull(),
+  descriptionAr: text('description_ar'),
+  descriptionEn: text('description_en'),
+  type: text('type').notNull(), // INVENTORY, SERVICE, RAW_MATERIAL, CONSUMABLE, FIXED_ASSET
+  categoryId: uuid('category_id'),
+  categoryNameAr: text('category_name_ar'),
+  brandId: uuid('brand_id'),
+  brandName: text('brand_name'),
+  baseUnit: text('base_unit').notNull(),
+  taxRate: integer('tax_rate').default(15).notNull(),
+  taxCategory: text('tax_category').default('STANDARD').notNull(), // STANDARD, ZERO_RATED, EXEMPT, OUT_OF_SCOPE
+  isVatInclusive: boolean('is_vat_inclusive').default(false).notNull(),
+  sellingPrice: integer('selling_price').default(0).notNull(),
+  wholesalePrice: integer('wholesale_price'),
+  cost: integer('cost').default(0).notNull(),
+  currentWac: integer('current_wac').default(0).notNull(),
+  trackBatches: boolean('track_batches').default(false).notNull(),
+  trackSerialNumbers: boolean('track_serial_numbers').default(false).notNull(),
+  trackExpiry: boolean('track_expiry').default(false).notNull(),
+  minStockLevel: integer('min_stock_level').default(0).notNull(),
+  maxStockLevel: integer('max_stock_level').default(10000).notNull(),
+  reorderPoint: integer('reorder_point').default(0).notNull(),
+  reorderQuantity: integer('reorder_quantity').default(0).notNull(),
+  barcodeAliases: jsonb('barcode_aliases'),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('items_tenant_idx').on(table.tenantId),
+  uniqueIndex('items_tenant_sku_idx').on(table.tenantId, table.sku),
+  index('items_tenant_barcode_idx').on(table.tenantId, table.primaryBarcode),
+]);
+
+export const customerPriceRulesTable = pgTable('customer_price_rules', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenantsTable.id).notNull(),
+  customerId: uuid('customer_id').references(() => customersTable.id).notNull(),
+  itemId: uuid('item_id').references(() => itemsTable.id).notNull(),
+  unitId: uuid('unit_id'),
+  unitPriceSar: integer('unit_price_sar').notNull(),
+  discountPercentage: integer('discount_percentage'),
+  minQuantity: integer('min_quantity').default(1).notNull(),
+  startDate: text('start_date'),
+  endDate: text('end_date'),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('cust_price_rules_tenant_idx').on(table.tenantId),
+  index('cust_price_rules_lookup_idx').on(table.tenantId, table.customerId, table.itemId),
+]);
+
+export const itemPriceHistoryTable = pgTable('item_price_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  tenantId: uuid('tenant_id').references(() => tenantsTable.id).notNull(),
+  itemId: uuid('item_id').references(() => itemsTable.id).notNull(),
+  unitId: uuid('unit_id'),
+  oldPriceSar: integer('old_price_sar').notNull(),
+  newPriceSar: integer('new_price_sar').notNull(),
+  changeType: text('change_type').notNull(), // DEFAULT_UNIT_PRICE, CUSTOMER_PRICE, MANUAL_OVERRIDE
+  reason: text('reason'),
+  userId: uuid('user_id').references(() => usersTable.id),
+  userEmail: text('user_email').notNull(),
+  recordedAt: timestamp('recorded_at', { withTimezone: true }).defaultNow().notNull(),
+}, (table) => [
+  index('item_price_history_tenant_idx').on(table.tenantId, table.itemId),
+]);
+
+
 

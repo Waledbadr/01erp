@@ -71,7 +71,16 @@ export const SAUDI_STANDARD_CHART_OF_ACCOUNTS = [
   { code: '10301', nameAr: 'ضريبة المدخلات القابلة للاسترداد (15%)', nameEn: 'VAT Input Tax Recoverable', type: 'ASSET', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 130 },
   { code: '10401', nameAr: 'مخزون البضائع بغرض البيع', nameEn: 'Inventory on Hand (Merchandise)', type: 'ASSET', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 140 },
   { code: '10500', nameAr: 'الأصول الثابتة وإهلاكها', nameEn: 'Fixed Assets & Depreciation', type: 'ASSET', normalBalance: 'DEBIT', isHeader: true, allowPosting: false, sortOrder: 150 },
-  { code: '10501', nameAr: 'مجمع إهلاك الأصول الثابتة', nameEn: 'Accumulated Depreciation', type: 'ASSET', normalBalance: 'CREDIT', isHeader: false, allowPosting: true, sortOrder: 151 },
+  { code: '10501', nameAr: 'أصول ثابتة - السيارات والشاحنات', nameEn: 'Fixed Assets - Motor Vehicles', type: 'ASSET', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 151 },
+  { code: '10502', nameAr: 'مجمع إهلاك السيارات والشاحنات', nameEn: 'Accumulated Depreciation - Motor Vehicles', type: 'ASSET', normalBalance: 'CREDIT', isHeader: false, allowPosting: true, sortOrder: 152 },
+  { code: '10503', nameAr: 'أصول ثابتة - أجهزة وتقنية المعلومات', nameEn: 'Fixed Assets - IT & Technology', type: 'ASSET', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 153 },
+  { code: '10504', nameAr: 'مجمع إهلاك أجهزة وتقنية المعلومات', nameEn: 'Accumulated Depreciation - IT & Technology', type: 'ASSET', normalBalance: 'CREDIT', isHeader: false, allowPosting: true, sortOrder: 154 },
+  { code: '10505', nameAr: 'أصول ثابتة - الأثاث والمعدات المكتبية', nameEn: 'Fixed Assets - Furniture & Fixtures', type: 'ASSET', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 155 },
+  { code: '10506', nameAr: 'مجمع إهلاك الأثاث والمعدات المكتبية', nameEn: 'Accumulated Depreciation - Furniture & Fixtures', type: 'ASSET', normalBalance: 'CREDIT', isHeader: false, allowPosting: true, sortOrder: 156 },
+  { code: '10507', nameAr: 'أصول ثابتة - الآلات والمعدات التشغيلية', nameEn: 'Fixed Assets - Machinery & Equipment', type: 'ASSET', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 157 },
+  { code: '10508', nameAr: 'مجمع إهلاك الآلات والمعدات التشغيلية', nameEn: 'Accumulated Depreciation - Machinery & Equipment', type: 'ASSET', normalBalance: 'CREDIT', isHeader: false, allowPosting: true, sortOrder: 158 },
+  { code: '10509', nameAr: 'أصول ثابتة - المباني والإنشاءات', nameEn: 'Fixed Assets - Buildings & Construction', type: 'ASSET', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 159 },
+  { code: '10510', nameAr: 'مجمع إهلاك المباني والإنشاءات', nameEn: 'Accumulated Depreciation - Buildings', type: 'ASSET', normalBalance: 'CREDIT', isHeader: false, allowPosting: true, sortOrder: 160 },
   
   // 2: LIABILITIES
   { code: '20000', nameAr: 'الالتزامات', nameEn: 'Liabilities', type: 'LIABILITY', normalBalance: 'CREDIT', isHeader: true, allowPosting: false, sortOrder: 200 },
@@ -89,6 +98,7 @@ export const SAUDI_STANDARD_CHART_OF_ACCOUNTS = [
   { code: '40000', nameAr: 'الإيرادات', nameEn: 'Revenues', type: 'REVENUE', normalBalance: 'CREDIT', isHeader: true, allowPosting: false, sortOrder: 400 },
   { code: '40101', nameAr: 'إيرادات المبيعات التجارية', nameEn: 'Commercial Sales Revenue', type: 'REVENUE', normalBalance: 'CREDIT', isHeader: false, allowPosting: true, sortOrder: 410 },
   { code: '40102', nameAr: 'مردودات ومسموحات المبيعات', nameEn: 'Sales Returns & Allowances', type: 'REVENUE', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 420 },
+  { code: '40301', nameAr: 'أرباح بيع واستبعاد أصول ثابتة', nameEn: 'Gain on Fixed Asset Disposal', type: 'REVENUE', normalBalance: 'CREDIT', isHeader: false, allowPosting: true, sortOrder: 430 },
 
   // 5: COGS & EXPENSES
   { code: '50000', nameAr: 'تكلفة المبيعات والمصروفات التشغيلية', nameEn: 'COGS & Operating Expenses', type: 'EXPENSE', normalBalance: 'DEBIT', isHeader: true, allowPosting: false, sortOrder: 500 },
@@ -99,6 +109,7 @@ export const SAUDI_STANDARD_CHART_OF_ACCOUNTS = [
   { code: '50301', nameAr: 'الإيجارات التشغيلية', nameEn: 'Operating Rent Expense', type: 'EXPENSE', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 530 },
   { code: '50401', nameAr: 'رسوم الخدمات المصرفية ونقاط البيع', nameEn: 'Bank & POS Service Fees', type: 'EXPENSE', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 540 },
   { code: '50402', nameAr: 'فروقات وترحيل الهللات', nameEn: 'Rounding Differences / Variances', type: 'EXPENSE', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 541 },
+  { code: '50403', nameAr: 'خسائر بيع واستبعاد وتخريد أصول ثابتة', nameEn: 'Loss on Fixed Asset Disposal & Scrapping', type: 'EXPENSE', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 542 },
   { code: '50501', nameAr: 'مصروف إهلاك الأصول الثابتة', nameEn: 'Depreciation Expense', type: 'EXPENSE', normalBalance: 'DEBIT', isHeader: false, allowPosting: true, sortOrder: 550 },
 ];
 

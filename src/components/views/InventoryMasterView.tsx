@@ -27,7 +27,19 @@ import {
   Coins,
   ArrowUpDown,
   FileSpreadsheet,
+  History,
+  ArrowLeftRight,
+  AlertOctagon,
+  ClipboardCheck,
+  Ship,
+  FileText,
 } from 'lucide-react';
+import { StockMovementsTab } from './inventory/StockMovementsTab.js';
+import { StockTransfersTab } from './inventory/StockTransfersTab.js';
+import { StockAdjustmentsTab } from './inventory/StockAdjustmentsTab.js';
+import { StocktakeTab } from './inventory/StocktakeTab.js';
+import { LandedCostTab } from './inventory/LandedCostTab.js';
+import { OpeningStockModal } from './inventory/OpeningStockModal.js';
 
 interface ItemUOM {
   id: string;
@@ -118,17 +130,31 @@ interface Brand {
   isActive: boolean;
 }
 
+export type InventoryTab =
+  | 'products'
+  | 'stocks'
+  | 'movements'
+  | 'transfers'
+  | 'adjustments'
+  | 'stocktake'
+  | 'landed-cost'
+  | 'warehouses'
+  | 'categories'
+  | 'barcode';
+
 export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void }> = ({ onNavigate }) => {
   const { language, isRTL } = useI18n();
   const isAr = language === 'ar';
   const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState<'products' | 'barcode' | 'stocks' | 'warehouses' | 'categories'>('products');
+  const [activeTab, setActiveTab] = useState<InventoryTab>('products');
   const [items, setItems] = useState<Item[]>([]);
   const [warehouses, setWarehouses] = useState<WarehouseItem[]>([]);
   const [stockSummaries, setStockSummaries] = useState<StockSummary[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
+  const [lowStockAlerts, setLowStockAlerts] = useState<any[]>([]);
+  const [showOpeningStockModal, setShowOpeningStockModal] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Search & Filters
@@ -166,12 +192,13 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
   const loadAllData = async () => {
     setIsLoading(true);
     try {
-      const [itemsRes, whRes, stocksRes, catsRes, brandsRes] = await Promise.all([
+      const [itemsRes, whRes, stocksRes, catsRes, brandsRes, alertsRes] = await Promise.all([
         fetch('/api/v1/inventory/items', { headers: getAuthHeaders() }),
         fetch('/api/v1/inventory/warehouses', { headers: getAuthHeaders() }),
         fetch('/api/v1/inventory/stocks/summary', { headers: getAuthHeaders() }),
         fetch('/api/v1/inventory/categories', { headers: getAuthHeaders() }),
         fetch('/api/v1/inventory/brands', { headers: getAuthHeaders() }),
+        fetch('/api/v1/inventory/alerts/low-stock', { headers: getAuthHeaders() }),
       ]);
 
       if (itemsRes.ok) {
@@ -193,6 +220,10 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
       if (brandsRes.ok) {
         const d = await brandsRes.json();
         setBrands(d.brands || []);
+      }
+      if (alertsRes.ok) {
+        const d = await alertsRes.json();
+        setLowStockAlerts(d.alerts || []);
       }
     } catch {
       toast.error(isAr ? 'تعذر جلب بيانات المستودع' : 'Failed to load inventory data');
@@ -324,6 +355,14 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
         actions={
           <div className="flex items-center gap-2">
             <Button
+              variant="outline"
+              size="sm"
+              startIcon={<Boxes className="w-3.5 h-3.5" />}
+              onClick={() => setShowOpeningStockModal(true)}
+            >
+              {isAr ? 'إثبات بضاعة أول المدة' : 'Opening Stock'}
+            </Button>
+            <Button
               variant="secondary"
               size="sm"
               startIcon={<RefreshCw className="w-3.5 h-3.5" />}
@@ -387,68 +426,155 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
         </div>
       </div>
 
+      {/* Low Stock Alert Warning Banner if any items hit reorder point */}
+      {lowStockAlerts.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 p-3.5 rounded-xl flex items-center justify-between text-amber-900 shadow-2xs">
+          <div className="flex items-center gap-2.5">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <span className="font-bold text-xs">
+                {isAr
+                  ? `تنبيه إعادة الطلب: يوجد ${lowStockAlerts.length} صنف بلغ أو تجاوز حد إعادة الطلب!`
+                  : `Reorder Warning: ${lowStockAlerts.length} items have reached or breached reorder point!`}
+              </span>
+              <span className="text-[11px] text-amber-700 ms-2 hidden sm:inline">
+                {lowStockAlerts.map((a) => `${a.sku} (${a.totalStock}/${a.reorderPoint})`).join('، ')}
+              </span>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setActiveTab('stocks')}
+            className="border-amber-300 text-amber-800 hover:bg-amber-100 shrink-0"
+          >
+            {isAr ? 'عرض الأرصدة' : 'View Stocks'}
+          </Button>
+        </div>
+      )}
+
       {/* 3. Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+      <div className="flex items-center gap-1.5 border-b border-slate-200 pb-2 overflow-x-auto">
         <button
           onClick={() => setActiveTab('products')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
             activeTab === 'products'
               ? 'bg-emerald-700 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Boxes className="w-4 h-4" />
-          {isAr ? 'دليل الأصناف والمنتجات' : 'Product Master'}
+          {isAr ? 'دليل الأصناف' : 'Products'}
           <span className="text-[10px] bg-emerald-800 text-emerald-100 px-1.5 py-0.5 rounded-full">{items.length}</span>
         </button>
 
         <button
-          onClick={() => setActiveTab('barcode')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
-            activeTab === 'barcode'
-              ? 'bg-emerald-700 text-white shadow-xs'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          <ScanLine className="w-4 h-4" />
-          {isAr ? 'فاحص وماسح الباركود (Rule I4)' : 'Barcode Scanner (Rule I4)'}
-        </button>
-
-        <button
           onClick={() => setActiveTab('stocks')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
             activeTab === 'stocks'
               ? 'bg-emerald-700 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <ArrowUpDown className="w-4 h-4" />
-          {isAr ? 'أرصدة المستودعات وتقييم WAC' : 'Multi-Warehouse Stocks & WAC'}
+          {isAr ? 'أرصدة المستودعات WAC' : 'Stocks & WAC'}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('movements')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
+            activeTab === 'movements'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <History className="w-4 h-4" />
+          {isAr ? 'سجل الحركات (Rule I1)' : 'Movements'}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('transfers')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
+            activeTab === 'transfers'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <ArrowLeftRight className="w-4 h-4" />
+          {isAr ? 'التحويلات بين المستودعات' : 'Transfers'}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('adjustments')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
+            activeTab === 'adjustments'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <AlertOctagon className="w-4 h-4" />
+          {isAr ? 'التسويات المخزنية' : 'Adjustments'}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('stocktake')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
+            activeTab === 'stocktake'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <ClipboardCheck className="w-4 h-4" />
+          {isAr ? 'الجرد الدوري' : 'Cycle Counting'}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('landed-cost')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
+            activeTab === 'landed-cost'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <Ship className="w-4 h-4" />
+          {isAr ? 'تكاليف الشحن (Rule I6)' : 'Landed Cost'}
         </button>
 
         <button
           onClick={() => setActiveTab('warehouses')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
             activeTab === 'warehouses'
               ? 'bg-emerald-700 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Warehouse className="w-4 h-4" />
-          {isAr ? 'المستودعات ومواقع التخزين Bins' : 'Warehouses & Bins'}
+          {isAr ? 'المستودعات والـ Bins' : 'Warehouses'}
           <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full">{warehouses.length}</span>
         </button>
 
         <button
           onClick={() => setActiveTab('categories')}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-bold transition-all ${
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
             activeTab === 'categories'
               ? 'bg-emerald-700 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
           <Tags className="w-4 h-4" />
-          {isAr ? 'التصنيفات والماركات' : 'Categories & Brands'}
+          {isAr ? 'التصنيفات والماركات' : 'Categories'}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('barcode')}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
+            activeTab === 'barcode'
+              ? 'bg-emerald-700 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          <ScanLine className="w-4 h-4" />
+          {isAr ? 'فاحص الباركود' : 'Barcode'}
         </button>
       </div>
 
@@ -994,6 +1120,70 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
           </div>
         </div>
       )}
+
+      {/* ==================================================== */}
+      {/* TAB: STOCK MOVEMENTS LEDGER (RULE I1 / I5) */}
+      {/* ==================================================== */}
+      {activeTab === 'movements' && (
+        <StockMovementsTab
+          warehouses={warehouses}
+          items={items}
+          getAuthHeaders={getAuthHeaders}
+        />
+      )}
+
+      {/* ==================================================== */}
+      {/* TAB: INTER-WAREHOUSE TRANSFERS */}
+      {/* ==================================================== */}
+      {activeTab === 'transfers' && (
+        <StockTransfersTab
+          warehouses={warehouses}
+          items={items}
+          getAuthHeaders={getAuthHeaders}
+        />
+      )}
+
+      {/* ==================================================== */}
+      {/* TAB: STOCK ADJUSTMENTS & GL ENTRY */}
+      {/* ==================================================== */}
+      {activeTab === 'adjustments' && (
+        <StockAdjustmentsTab
+          warehouses={warehouses}
+          items={items}
+          getAuthHeaders={getAuthHeaders}
+        />
+      )}
+
+      {/* ==================================================== */}
+      {/* TAB: PHYSICAL STOCKTAKE & CYCLE COUNTING */}
+      {/* ==================================================== */}
+      {activeTab === 'stocktake' && (
+        <StocktakeTab
+          warehouses={warehouses}
+          categories={categories}
+          getAuthHeaders={getAuthHeaders}
+        />
+      )}
+
+      {/* ==================================================== */}
+      {/* TAB: LANDED COST ALLOCATION ENGINE (RULE I6) */}
+      {/* ==================================================== */}
+      {activeTab === 'landed-cost' && (
+        <LandedCostTab
+          items={items}
+          getAuthHeaders={getAuthHeaders}
+        />
+      )}
+
+      {/* Opening Stock Wizard Modal */}
+      <OpeningStockModal
+        isOpen={showOpeningStockModal}
+        onClose={() => setShowOpeningStockModal(false)}
+        onSuccess={loadAllData}
+        warehouses={warehouses}
+        items={items}
+        getAuthHeaders={getAuthHeaders}
+      />
 
       {/* ==================================================== */}
       {/* MODAL: CREATE NEW ITEM WITH MULTI-UOM (RULE I3, I4) */}

@@ -9,11 +9,25 @@ import { DocsView } from './components/views/DocsView.js';
 import { LoginView, RegisterView, ForgotPasswordView } from './components/views/AuthViews.js';
 import { CompanyWizardView } from './components/views/CompanyWizardView.js';
 import { UsersRbacView } from './components/views/UsersRbacView.js';
+import { AccountingMasterView } from './components/views/AccountingMasterView.js';
 import { InventoryMasterView } from './components/views/InventoryMasterView.js';
 import { PartiesMasterView } from './components/views/PartiesMasterView.js';
 import { SalesInvoicesView } from './components/views/SalesInvoicesView.js';
+import { ZatcaPhase2View } from './components/views/ZatcaPhase2View.js';
+import { PurchasingMasterView } from './components/views/PurchasingMasterView.js';
+import { TreasuryMasterView } from './components/views/TreasuryMasterView.js';
+import { VatTaxEngineView } from './components/views/VatTaxEngineView.js';
+import { ReportsCenterView } from './components/views/ReportsCenterView.js';
+import { DocumentsMasterView } from './components/views/DocumentsMasterView.js';
+import { NotificationCenterView } from './components/views/NotificationCenterView.js';
+import { RemindersCollectionsView } from './components/views/RemindersCollectionsView.js';
+import { AutomationEngineView } from './components/views/AutomationEngineView.js';
+import { PointOfSaleView } from './components/views/PointOfSaleView.js';
+import { OcrInvoiceCaptureView } from './components/views/OcrInvoiceCaptureView.js';
+import { PublicDocumentViewer } from './components/documents/PublicDocumentViewer.js';
 import { NotFoundView, MaintenanceView, ModuleShellView } from './components/views/SystemViews.js';
 import { DomainAuditTools } from './components/DomainAuditTools.js';
+import { SecurityAuditBackupView } from './components/views/SecurityAuditBackupView.js';
 import { PhaseRoadmapModal } from './components/PhaseRoadmapModal.js';
 import { DocViewerModal } from './components/DocViewerModal.js';
 import { SYSTEM_DOCS, SystemDoc } from './lib/docsData.js';
@@ -25,6 +39,13 @@ function AppContent() {
   const [currentRoute, setCurrentRoute] = useState<string>('/');
   const [selectedDoc, setSelectedDoc] = useState<SystemDoc | null>(null);
   const [isRoadmapOpen, setIsRoadmapOpen] = useState<boolean>(false);
+
+  // Check for public secure link route
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  if (pathname.startsWith('/view-doc/')) {
+    const token = pathname.replace('/view-doc/', '').split('/')[0];
+    return <PublicDocumentViewer token={token} />;
+  }
 
   const handleOpenDocById = (docId: string) => {
     const found = SYSTEM_DOCS.find((d) => d.id === docId || d.filename.toLowerCase().includes(docId.toLowerCase()));
@@ -54,7 +75,14 @@ function AppContent() {
       case '/docs':
         return <DocsView onSelectDoc={(doc) => setSelectedDoc(doc)} />;
       case '/audit':
+        return <SecurityAuditBackupView onNavigate={setCurrentRoute} initialTab="audit" />;
+      case '/audit-tools':
         return <DomainAuditTools lang={language} />;
+      case '/security':
+        return <SecurityAuditBackupView onNavigate={setCurrentRoute} initialTab="sessions" />;
+      case '/backups':
+      case '/backup':
+        return <SecurityAuditBackupView onNavigate={setCurrentRoute} initialTab="backups" />;
       case '/roadmap':
         return (
           <div className="space-y-4">
@@ -79,18 +107,7 @@ function AppContent() {
       case '/maintenance':
         return <MaintenanceView onNavigate={setCurrentRoute} />;
       case '/accounting':
-        return (
-          <ModuleShellView
-            title={isAr ? 'المحاسبة ودفتر الأستاذ العام' : 'General Ledger & Accounting'}
-            phaseCode="PHASE-02"
-            description={
-              isAr
-                ? 'شجرة الحسابات الموحدة، قيود اليومية الثنائية، والتحقق الصارم من توازن المدين والدائن (G1-G8).'
-                : 'Unified Chart of Accounts, double-entry journals, and strict debits=credits balance invariants.'
-            }
-            onNavigate={setCurrentRoute}
-          />
-        );
+        return <AccountingMasterView onNavigate={setCurrentRoute} />;
       case '/inventory':
         return <InventoryMasterView onNavigate={setCurrentRoute} />;
       case '/parties':
@@ -99,34 +116,55 @@ function AppContent() {
         return <PartiesMasterView onNavigate={setCurrentRoute} />;
       case '/sales':
       case '/invoices':
-      case '/zatca':
         return <SalesInvoicesView onNavigate={setCurrentRoute} />;
+      case '/pos':
+      case '/point-of-sale':
+        return <PointOfSaleView />;
+      case '/ocr':
+      case '/ocr-capture':
+      case '/supplier-invoice-ocr':
+        return <OcrInvoiceCaptureView onNavigate={setCurrentRoute} />;
+      case '/zatca':
+        return <ZatcaPhase2View onNavigate={setCurrentRoute} />;
       case '/purchasing':
-        return (
-          <ModuleShellView
-            title={isAr ? 'المشتريات وفواتير الموردين' : 'Purchasing & Vendor Bills'}
-            phaseCode="PHASE-06"
-            description={
-              isAr
-                ? 'أوامر الشراء، استلام البضائع (GRN)، توزيع تكاليف الشحن والجمارك (Landed Cost)، ومطابقة الفواتير.'
-                : 'Purchase orders, GRN receipts, landed cost allocation (freight & customs), and 3-way matching.'
-            }
-            onNavigate={setCurrentRoute}
-          />
-        );
+      case '/bills':
+      case '/purchase-orders':
+        return <PurchasingMasterView onNavigate={setCurrentRoute} />;
       case '/treasury':
-        return (
-          <ModuleShellView
-            title={isAr ? 'الخزينة والمدفوعات والمطابقة' : 'Treasury, Payments & Reconciliations'}
-            phaseCode="PHASE-08"
-            description={
-              isAr
-                ? 'إدارة حسابات الصندوق والبنوك، سندات القبض والصرف، وتخصيص الدفعات على الفواتير، والمطابقة البنكية.'
-                : 'Cash vaults, bank accounts, receipts, payment allocations against invoices, and bank reconciliation.'
-            }
-            onNavigate={setCurrentRoute}
-          />
-        );
+      case '/receipts':
+      case '/payments':
+      case '/transfers':
+      case '/reconciliation':
+      case '/cheques':
+        return <TreasuryMasterView onNavigate={setCurrentRoute} />;
+      case '/vat':
+      case '/vat-tax':
+      case '/vat-ledger':
+      case '/tax-settings':
+      case '/tax-return':
+        return <VatTaxEngineView />;
+      case '/reports':
+      case '/reports-center':
+        return <ReportsCenterView />;
+      case '/documents':
+      case '/templates':
+      case '/document-templates':
+        return <DocumentsMasterView initialTab="templates" />;
+      case '/sharing':
+      case '/document-sharing':
+        return <DocumentsMasterView initialTab="sharing" />;
+      case '/document-catalog':
+        return <DocumentsMasterView initialTab="catalog" />;
+      case '/notifications':
+      case '/notification-center':
+        return <NotificationCenterView onNavigate={setCurrentRoute} />;
+      case '/reminders':
+      case '/collections':
+        return <RemindersCollectionsView onNavigate={setCurrentRoute} />;
+      case '/automation':
+      case '/automation-engine':
+      case '/rules':
+        return <AutomationEngineView onNavigate={setCurrentRoute} />;
       default:
         return <NotFoundView onNavigate={setCurrentRoute} />;
     }
