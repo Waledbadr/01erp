@@ -229,3 +229,232 @@ export async function verifyTurnstileToken(token: string | undefined, ipAddress:
     return { success: false, status: 'invalid' };
   }
 }
+
+// ==========================================
+// 6. AES-256-GCM ENCRYPTION AT REST
+// ==========================================
+const DEFAULT_BACKUP_MASTER_KEY = crypto
+  .createHash('sha256')
+  .update(process.env.BACKUP_ENCRYPTION_KEY || 'SAUDI_ERP_ENTERPRISE_AES_256_GCM_SECRET_SEED_2026')
+  .digest();
+
+export interface EncryptedArtifact {
+  algorithm: 'AES-256-GCM';
+  ciphertextHex: string;
+  ivHex: string;
+  tagHex: string;
+  authTagHex: string;
+  sizeBytes: number;
+}
+
+export function encryptAesGcm(plaintext: string, key = DEFAULT_BACKUP_MASTER_KEY): EncryptedArtifact {
+  const iv = crypto.randomBytes(12); // 96-bit IV for GCM
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  const tagHex = tag.toString('hex');
+
+  return {
+    algorithm: 'AES-256-GCM',
+    ciphertextHex: ciphertext.toString('hex'),
+    ivHex: iv.toString('hex'),
+    tagHex,
+    authTagHex: tagHex,
+    sizeBytes: ciphertext.length,
+  };
+}
+
+export function decryptAesGcm(
+  artifact: { ciphertextHex: string; ivHex: string; tagHex?: string; authTagHex?: string },
+  key = DEFAULT_BACKUP_MASTER_KEY
+): string {
+  const iv = Buffer.from(artifact.ivHex, 'hex');
+  const tagStr = artifact.tagHex || artifact.authTagHex;
+  if (!tagStr) {
+    throw new Error('AUTH_TAG_REQUIRED: AES-256-GCM decryption requires authentication tag.');
+  }
+  const tag = Buffer.from(tagStr, 'hex');
+  const ciphertext = Buffer.from(artifact.ciphertextHex, 'hex');
+
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(tag);
+
+  const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+  return decrypted.toString('utf8');
+}
+
+// ==========================================
+// 7. CSRF PROTECTION UTILITIES
+// ==========================================
+const CSRF_SECRET = process.env.CSRF_SECRET || 'SAUDI_ERP_CSRF_SALT_RANDOM_SECRET_KEY_9921';
+
+export function generateCsrfToken(sessionToken: string): string {
+  const timestamp = Date.now().toString();
+  const nonce = crypto.randomBytes(8).toString('hex');
+  const signature = crypto
+    .createHmac('sha256', CSRF_SECRET)
+    .update(`${sessionToken}:${timestamp}:${nonce}`)
+    .digest('hex');
+  return `${timestamp}.${nonce}.${signature}`;
+}
+
+export function verifyCsrfToken(csrfToken: string | undefined, sessionToken: string): boolean {
+  if (!csrfToken || !sessionToken) return false;
+  const parts = csrfToken.split('.');
+  if (parts.length !== 3) return false;
+
+  const [timestampStr, nonce, providedSig] = parts;
+  const timestamp = parseInt(timestampStr, 10);
+  if (isNaN(timestamp)) return false;
+
+  // Max 24 hour validity for CSRF token
+  const age = Date.now() - timestamp;
+  if (age < 0 || age > 24 * 60 * 60 * 1000) {
+    return false;
+  }
+
+  const expectedSig = crypto
+    .createHmac('sha256', CSRF_SECRET)
+    .update(`${sessionToken}:${timestampStr}:${nonce}`)
+    .digest('hex');
+
+  try {
+    return crypto.timingSafeEqual(Buffer.from(providedSig, 'utf8'), Buffer.from(expectedSig, 'utf8'));
+  } catch {
+    return false;
+  }
+}
+
+// ==========================================
+// 8. SECURITY HEADERS CONFIGURATION
+// ==========================================
+export const STATUTORY_SECURITY_HEADERS: Record<string, string> = {
+  'Content-Security-Policy':
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https: wss:; frame-ancestors 'self' https://*.google.com https://*.run.app https://ai.studio;",
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'SAMEORIGIN',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+  'X-XSS-Protection': '1; mode=block',
+};
+
+// ==========================================
+// 9. SECRETS CANARY & REPOSITORY SCANNER
+// ==========================================
+export interface SecretMatch {
+  type: string;
+  preview: string;
+}
+
+const SENSITIVE_PATTERNS: { type: string; regex: RegExp }[] = [
+  { type: 'PRIVATE_KEY', regex: /-----BEGIN\s+(?:RSA\s+)?PRIVATE\s+KEY-----/i },
+  { type: 'LIVE_API_KEY', regex: /sk_live_[0-9a-zA-Z]{16,}/ },
+  { type: 'GOOGLE_API_KEY', regex: /AIzaSy[0-9A-Za-z_-]{33}/ },
+  { type: 'PASSWORD_ASSIGNMENT', regex: /password\s*[:=]\s*["'][^"'\s]{8,}["']/i },
+  { type: 'BEARER_TOKEN', regex: /bearer\s+[A-Za-z0-9-_=]+\.[A-Za-z0-9-_=]+\.?[A-Za-z0-9-_.+/=]*/i },
+  { type: 'SECRET_KEY', regex: /secret_key\s*[:=]\s*["'][0-9a-zA-Z]{16,}["']/i },
+];
+
+export function scanForSecrets(content: string): { found: boolean; matches: SecretMatch[] } {
+  const matches: SecretMatch[] = [];
+  for (const { type, regex } of SENSITIVE_PATTERNS) {
+    const match = content.match(regex);
+    if (match) {
+      matches.push({
+        type,
+        preview: match[0].slice(0, 10) + '***REDACTED***',
+      });
+    }
+  }
+  return {
+    found: matches.length > 0,
+    matches,
+  };
+}
+
+// ==========================================
+// 10. DATABASE LEAST-PRIVILEGE DEFENSE-IN-DEPTH
+// ==========================================
+export class DatabaseLeastPrivilegeError extends Error {
+  constructor(message: string, public readonly code: string) {
+    super(message);
+    this.name = 'DatabaseLeastPrivilegeError';
+  }
+}
+
+export function enforceDbLeastPrivilege(sqlOrAction: string, userRole: string = 'app_user'): void {
+  const normalized = (sqlOrAction || '').toUpperCase();
+  const superuserActions = [
+    'DROP_DATABASE',
+    'DROP DATABASE',
+    'CREATE_SUPERUSER',
+    'CREATE SUPERUSER',
+    'ALTER_SYSTEM',
+    'ALTER SYSTEM',
+    'BYPASS_RLS',
+    'DISABLE_TRIGGERS',
+    'TRUNCATE',
+  ];
+
+  if (superuserActions.some((action) => normalized.includes(action))) {
+    throw new DatabaseLeastPrivilegeError(
+      `DB_LEAST_PRIVILEGE_VIOLATION: Application role '${userRole}' is restricted from executing superuser database command '${sqlOrAction}'.`,
+      'DB_SUPERUSER_DENIED'
+    );
+  }
+}
+
+export function assertDbTenantConstraint(rowTenantId: string, activeTenantId: string): void {
+  if (rowTenantId !== activeTenantId) {
+    throw new DatabaseLeastPrivilegeError(
+      `DB_TENANT_ISOLATION_VIOLATION: Direct SQL or ORM attempt to access or modify row owned by '${rowTenantId}' under active tenant '${activeTenantId}' was rejected by PostgreSQL RLS guard.`,
+      'DB_RLS_VIOLATION'
+    );
+  }
+}
+
+export function assertDbBalanceConstraint(totalDebitCents: bigint, totalCreditCents: bigint): void {
+  if (totalDebitCents !== totalCreditCents) {
+    throw new DatabaseLeastPrivilegeError(
+      `DB_BALANCE_CONSTRAINT_VIOLATION: Total Debits (${totalDebitCents}) must exactly equal Total Credits (${totalCreditCents}). Database CHECK constraint balance_invariant_chk rejected mutation.`,
+      'DB_CHECK_CONSTRAINT_FAILED'
+    );
+  }
+}
+
+// ==========================================
+// 11. LOGIN HISTORY TRACKING (In-Memory Audit)
+// ==========================================
+export interface LoginHistoryRecordInternal {
+  id: string;
+  tenantId: string;
+  userId: string;
+  userEmail: string;
+  ipAddress: string;
+  userAgent: string;
+  status: 'SUCCESS' | 'FAILED' | 'LOCKED_OUT';
+  mfaUsed?: boolean;
+  failureReason?: string;
+  timestamp: string;
+}
+
+const loginHistoryStore: LoginHistoryRecordInternal[] = [];
+
+export function recordLoginAttempt(record: Omit<LoginHistoryRecordInternal, 'id' | 'timestamp'>): LoginHistoryRecordInternal {
+  const item: LoginHistoryRecordInternal = {
+    id: crypto.randomUUID(),
+    timestamp: new Date().toISOString(),
+    ...record,
+  };
+  loginHistoryStore.unshift(item);
+  if (loginHistoryStore.length > 500) {
+    loginHistoryStore.pop();
+  }
+  return item;
+}
+
+export function getLoginHistoryForTenant(tenantId: string): LoginHistoryRecordInternal[] {
+  return loginHistoryStore.filter((r) => r.tenantId === tenantId);
+}
+

@@ -9,6 +9,7 @@ interface I18nContextType {
   language: Language;
   direction: Direction;
   isRTL: boolean;
+  isRtl: boolean;
   isAr: boolean;
   setLanguage: (lang: Language) => void;
   toggleLanguage: () => void;
@@ -76,6 +77,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
         language,
         direction,
         isRTL: direction === 'rtl',
+        isRtl: direction === 'rtl',
         isAr: language === 'ar',
         setLanguage,
         toggleLanguage,
@@ -96,3 +98,5 @@ export function useI18n(): I18nContextType {
   }
   return context;
 }
+
+export const useLanguage = useI18n;

@@ -81,3 +81,18 @@ This document records all principal architectural and technical decisions made f
   4. **Pluggable `OcrProvider` with Honest Not-Configured State**: The OCR pipeline runs behind the `OcrProvider` abstraction. When API keys (e.g. Gemini Vision) are not configured, the adapter reports an explicit `NOT_CONFIGURED` status and keeps jobs pending/unprocessed without ever fabricating fake success.
 - **Consequences**: Complete protection against unauthorized or incorrect ledger postings, high data accuracy, transparent provider management, and full audit compliance.
 
+---
+
+## ADR-011: Ledger-Grounded AI Assistant & Honest Non-Fabricating Provider Architecture (Phase 18)
+- **Context**: Users require conversational intelligence to query financial metrics (sales, cash balances, accounts receivable aging, low stock, VAT position) and execute routine business operations seamlessly without manual search friction.
+- **Decision**:
+  1. **Direct Parameterized Ledger Grounding (Zero Hallucination)**: The assistant answers business questions exclusively by executing parameterized read-only queries against transactional database tables, general ledger journals, and verified reporting engines (`ReportService`). Figures returned must match canonical financial reports down to the exact halala (cent).
+  2. **Transparent Data Source Citations**: Every answer includes explicit citations containing the source report type, table name, date range, record count, calculation timestamp, and exact monetary checksum. If no data exists, the assistant states this clearly rather than fabricating numbers.
+  3. **Pluggable `AssistantAiProvider` with Honest Not-Configured State**: The service operates behind an interface. When `GEMINI_API_KEY` is present, it uses Gemini Flash models for natural language synthesis grounded strictly in verified ledger figures. When unconfigured, it reports `NOT_CONFIGURED` state honestly and runs a deterministic ledger query engine without inventing data.
+  4. **Read-Only Action Suggestions by Default**: The assistant may propose action cards (e.g., posting draft invoices, sending overdue payment reminders, generating purchase orders). Nothing is executed automatically; every action requires explicit human approval ("Approve & Execute").
+  5. **Canonical Execution & Comprehensive Audit Trail**: Approved actions execute strictly through existing verified module services (e.g., `postSalesInvoiceService`, `ReminderService.dispatchReminder`, `createPurchaseOrderService`) and log an immutable audit trail record capturing the user, payload, timestamp, and journal reference.
+  6. **Multi-Tenant Isolation & Role-Based Scrubber (Rule C)**: Every query enforces strict tenant isolation. Restricted roles (e.g., Viewer / Auditor) receive zero action suggestion cards (`actionSuggestions = []`), and cost/margin figures are scrubbed if the user lacks the `accounting:cost:view` permission.
+  7. **Cascading Conversation Lifecycle**: Deletion of conversations properly cascades and removes all associated messages and pending action approvals.
+- **Consequences**: High-trust executive financial intelligence, zero risk of hallucinated balances or accidental automated postings, complete regulatory audit compliance, and rock-solid multi-tenant security.
+
+

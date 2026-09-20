@@ -1162,7 +1162,16 @@ export class CentralTenantDataStore {
   private sequenceLocks = new Map<string, Promise<void>>();
 
   constructor() {
-    this.initDefaultSeed();
+    try {
+      this.initDefaultSeed();
+    } catch {
+      // Safe fallback if cyclic module imports are resolving
+      setTimeout(() => {
+        try {
+          this.initDefaultSeed();
+        } catch {}
+      }, 0);
+    }
   }
 
   public initDefaultSeed() {

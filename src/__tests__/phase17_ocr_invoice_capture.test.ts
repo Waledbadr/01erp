@@ -49,6 +49,11 @@ describe('PHASE-17: OCR Supplier Invoice Capture Test Suite', () => {
         ['tenant-company-a', [{ id: 'wh-a-1', nameAr: 'المستودع المركزي' }]],
         ['tenant-company-b', [{ id: 'wh-b-1', nameAr: 'المستودع المركزي ب' }]],
       ]),
+      items: new Map([
+        ['tenant-company-a', [{ id: 'item-gen-srv', code: 'ITM-01', nameAr: 'صنف عام', baseUnit: 'PCS' }]],
+      ]),
+      stockMovements: new Map(),
+      supplierPriceRecords: new Map(),
       stockBalances: new Map(),
       journals: new Map(),
       accounts: new Map([
@@ -253,7 +258,7 @@ describe('PHASE-17: OCR Supplier Invoice Capture Test Suite', () => {
     expect(journals.length).toBeGreaterThan(0);
     const lastJournal = journals[journals.length - 1];
     expect(lastJournal.status).toBe('POSTED');
-    expect(lastJournal.totalDebitCents).toBe(lastJournal.totalCreditCents);
-    expect(lastJournal.totalDebitCents).toBeGreaterThan(0n);
+    expect(lastJournal.totalDebit).toBe(lastJournal.totalCredit);
+    expect(Number(lastJournal.totalDebit)).toBeGreaterThan(0);
   });
 });

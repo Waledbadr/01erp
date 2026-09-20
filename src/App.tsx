@@ -24,10 +24,15 @@ import { RemindersCollectionsView } from './components/views/RemindersCollection
 import { AutomationEngineView } from './components/views/AutomationEngineView.js';
 import { PointOfSaleView } from './components/views/PointOfSaleView.js';
 import { OcrInvoiceCaptureView } from './components/views/OcrInvoiceCaptureView.js';
+import { AssistantMasterView } from './components/views/AssistantMasterView.js';
+import { ImportExportCenterView } from './components/views/ImportExportCenterView.js';
+import { BillingSubscriptionView } from './components/views/BillingSubscriptionView.js';
+import { SuperAdminPlatformView } from './components/views/SuperAdminPlatformView.js';
 import { PublicDocumentViewer } from './components/documents/PublicDocumentViewer.js';
 import { NotFoundView, MaintenanceView, ModuleShellView } from './components/views/SystemViews.js';
 import { DomainAuditTools } from './components/DomainAuditTools.js';
 import { SecurityAuditBackupView } from './components/views/SecurityAuditBackupView.js';
+import { PhaseRoadmapView } from './components/views/PhaseRoadmapView.js';
 import { PhaseRoadmapModal } from './components/PhaseRoadmapModal.js';
 import { DocViewerModal } from './components/DocViewerModal.js';
 import { SYSTEM_DOCS, SystemDoc } from './lib/docsData.js';
@@ -84,20 +89,7 @@ function AppContent() {
       case '/backup':
         return <SecurityAuditBackupView onNavigate={setCurrentRoute} initialTab="backups" />;
       case '/roadmap':
-        return (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">
-                {isAr ? 'خارطة المراحل التنفيذية (13 مرحلة)' : 'Implementation Phase Roadmap (13 Phases)'}
-              </h2>
-            </div>
-            <PhaseRoadmapModal
-              isOpen={true}
-              onClose={() => setCurrentRoute('/')}
-              lang={language}
-            />
-          </div>
-        );
+        return <PhaseRoadmapView onNavigate={setCurrentRoute} />;
       case '/login':
         return <LoginView onNavigate={setCurrentRoute} />;
       case '/register':
@@ -165,6 +157,23 @@ function AppContent() {
       case '/automation-engine':
       case '/rules':
         return <AutomationEngineView onNavigate={setCurrentRoute} />;
+      case '/assistant':
+      case '/ai-assistant':
+      case '/copilot':
+        return <AssistantMasterView currentLocale={language} />;
+      case '/import-export':
+      case '/import':
+      case '/export':
+      case '/batch-import':
+        return <ImportExportCenterView />;
+      case '/billing':
+      case '/subscription':
+      case '/plans':
+        return <BillingSubscriptionView onNavigate={setCurrentRoute} />;
+      case '/superadmin':
+      case '/platform-admin':
+      case '/saas-admin':
+        return <SuperAdminPlatformView onNavigate={setCurrentRoute} />;
       default:
         return <NotFoundView onNavigate={setCurrentRoute} />;
     }

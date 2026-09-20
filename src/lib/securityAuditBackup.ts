@@ -149,13 +149,17 @@ export interface BackupEntityCounts {
   auditLogs: number;
 }
 
+export type RetentionTier = 'DAILY_7D' | 'MONTHLY_30D' | 'QUARTERLY_90D' | 'ANNUAL_365D';
+export type StorageLocation = 'PRIMARY_HOT' | 'OFFSITE_SECURE_VAULT' | 'COLDLINE_S3_GLACIER';
+export type BackupType = 'SCHEDULED' | 'MANUAL' | 'PRE_RESTORE_SAFETY' | 'SCHEDULED_DAILY_INCREMENTAL' | 'SCHEDULED_WEEKLY_FULL';
+
 export interface BackupSnapshotMetadata {
   id: string;
   tenantId: string;
   tenantNameAr: string;
   tenantNameEn: string;
   snapshotNumber: string; // BKP-YYYY-XXXXX
-  type: 'SCHEDULED' | 'MANUAL' | 'PRE_RESTORE_SAFETY';
+  type: BackupType;
   description?: string;
   sizeBytes: number;
   checksumSha256: string;
@@ -164,6 +168,13 @@ export interface BackupSnapshotMetadata {
   entityCounts: BackupEntityCounts;
   isPreRestoreSafety: boolean;
   restorable: boolean;
+  // Phase 21 Hardening Attributes
+  encryptionAlgorithm: 'AES-256-GCM';
+  retentionTier: RetentionTier;
+  storageLocation: StorageLocation;
+  isVerifiedDrillPassed: boolean;
+  verifiedAt?: string;
+  encryptedArtifactSize?: number;
 }
 
 export interface BackupVerificationReport {
@@ -178,6 +189,25 @@ export interface BackupVerificationReport {
   status: 'PASSED' | 'FAILED';
   findingsAr: string[];
   findingsEn: string[];
+  // Phase 21 Drill Details
+  tableRowCounts: {
+    accounts: number;
+    journals: number;
+    journalLines: number;
+    items: number;
+    customers: number;
+    suppliers: number;
+    salesInvoices: number;
+    purchaseBills: number;
+    fixedAssets: number;
+  };
+  trialBalanceZeroDrift: boolean;
+  spotJournalAudit: {
+    checkedCount: number;
+    passedCount: number;
+    failedCount: number;
+  };
+  measuredRestoreMs: number;
 }
 
 export interface RestoreResult {
@@ -189,6 +219,32 @@ export interface RestoreResult {
   restoredEntityCounts: BackupEntityCounts;
   messageAr: string;
   messageEn: string;
+  restoreDurationMs: number;
+  justificationReason?: string;
+}
+
+export interface LoginHistoryRecord {
+  id: string;
+  tenantId: string;
+  userId: string;
+  userEmail: string;
+  ipAddress: string;
+  userAgent: string;
+  status: 'SUCCESS' | 'FAILED' | 'LOCKED_OUT';
+  failureReason?: string;
+  timestamp: string;
+}
+
+export interface SecurityHardeningMetrics {
+  headersEnforced: boolean;
+  hstsActive: boolean;
+  cspConfigured: boolean;
+  csrfEnforced: boolean;
+  cookieSameSiteStrict: boolean;
+  dbLeastPrivilegeVerified: boolean;
+  zeroSecretsAuditPassed: boolean;
+  idleTimeoutMinutes: number;
+  absoluteSessionHours: number;
 }
 
 /**

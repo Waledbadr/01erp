@@ -12,10 +12,7 @@ export interface AppEnv {
 }
 
 export function validateEnv(): AppEnv {
-  const port = parseInt(process.env.PORT || '3000', 10);
-  if (isNaN(port) || port <= 0) {
-    throw new Error(`[FATAL_CONFIG] Invalid PORT configuration: "${process.env.PORT}". Must be a valid positive integer.`);
-  }
+  const port = 3000;
 
   const nodeEnv = (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test';
   const jwtSecret = process.env.JWT_SECRET || 'dev-local-jwt-secret-min-32-chars-saudi-erp';

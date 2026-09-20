@@ -15,13 +15,16 @@ const SENSITIVE_KEYS = new Set([
   'csid',
 ]);
 
-function redactSensitive(obj: unknown): unknown {
+function redactSensitive(obj: unknown, seen = new WeakSet<object>(), depth = 0): unknown {
+  if (depth > 6) return '[DEPTH_LIMIT]';
   if (obj === null || obj === undefined) return obj;
   if (typeof obj === 'string') return obj;
   if (typeof obj !== 'object') return obj;
+  if (seen.has(obj as object)) return '[CIRCULAR]';
+  seen.add(obj as object);
 
   if (Array.isArray(obj)) {
-    return obj.map(redactSensitive);
+    return obj.map((item) => redactSensitive(item, seen, depth + 1));
   }
 
   const redacted: Record<string, unknown> = {};
@@ -30,7 +33,7 @@ function redactSensitive(obj: unknown): unknown {
     if (SENSITIVE_KEYS.has(lowerKey) || lowerKey.includes('secret') || lowerKey.includes('password') || lowerKey.includes('privatekey')) {
       redacted[key] = '[REDACTED]';
     } else if (typeof value === 'object' && value !== null) {
-      redacted[key] = redactSensitive(value);
+      redacted[key] = redactSensitive(value, seen, depth + 1);
     } else {
       redacted[key] = value;
     }

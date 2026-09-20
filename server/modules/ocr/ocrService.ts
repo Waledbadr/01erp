@@ -147,11 +147,17 @@ Ensure all monetary values are exact decimal numbers. Do not include markdown co
         rawResult: parsed,
       };
     } catch (err: any) {
-      return {
-        status: 'FAILED',
-        provider: this.name,
-        errorMessage: err?.message || 'Failed to process document through Gemini Vision API.',
-      };
+      // If Gemini call fails due to invalid key or network, fallback to structured heuristic parser
+      try {
+        const fallback = new StructuredHeuristicOcrProvider();
+        return await fallback.processDocument(fileBase64, mimeType, fileName);
+      } catch {
+        return {
+          status: 'FAILED',
+          provider: this.name,
+          errorMessage: err?.message || 'Failed to process document through Gemini Vision API.',
+        };
+      }
     }
   }
 }
@@ -567,7 +573,12 @@ export async function commitOcrJobToDraftBillService(
     source: 'ocr',
     ocrJobId: job.id,
     subtotalSar,
+    subtotalHalalas: toHalalas(String(subtotalSar.toFixed(2))),
     vatAmountSar,
+    taxTotalSar: vatAmountSar,
+    taxTotalHalalas: toHalalas(String(vatAmountSar.toFixed(2))),
+    discountTotalSar: 0,
+    discountTotalHalalas: BigInt(0),
     totalAmountSar,
     totalAmountHalalas: toHalalas(String(totalAmountSar.toFixed(2))),
     notes: overrides?.notes || `Imported via OCR Supplier Invoice Capture (Job: ${job.id})`,

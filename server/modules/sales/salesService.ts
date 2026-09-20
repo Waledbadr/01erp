@@ -53,6 +53,7 @@ import {
   ZATCA_INITIAL_PIH_HASH,
 } from '../../../src/lib/zatca.js';
 import { syncEInvoiceDocumentOnPost } from '../zatca/zatcaService.js';
+import { publishWebhookEvent } from '../integrations/webhookService.js';
 
 export interface CreateInvoicePayload {
   branchId?: string;
@@ -808,6 +809,25 @@ export async function postSalesInvoiceService(
       totalAmountSar: invoice.totalAmountSar,
     },
   });
+
+  // Publish Webhook Outbox Event (Non-blocking, decoupled)
+  try {
+    publishWebhookEvent(context.tenantId, 'invoice.posted', {
+      invoiceId: invoice.id,
+      invoiceNumber: invoice.invoiceNumber,
+      invoiceType: invoice.invoiceType,
+      customerId: invoice.customerId,
+      customerName: invoice.customerNameAr,
+      customerVatNumber: invoice.customerVatNumber,
+      totalAmountSar: invoice.totalAmountSar,
+      vatAmountSar: invoice.taxTotalSar,
+      issueDate: invoice.issueDate,
+      status: invoice.status,
+      journalEntryNumber: postedJournal.entryNumber,
+    });
+  } catch (err: any) {
+    logger.warn(`Failed to publish webhook outbox event for invoice ${invoice.invoiceNumber}: ${err.message}`);
+  }
 
   logger.info(`[SALES] Successfully posted Invoice #${invoice.invoiceNumber} with Journal #${postedJournal.entryNumber}`);
   return invoice;

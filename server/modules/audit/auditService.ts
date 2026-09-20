@@ -8,6 +8,42 @@ import {
 
 export const AUDIT_GENESIS_HASH = '0000000000000000000000000000000000000000000000000000000000000000';
 
+export function recordAuditLogService(params: {
+  tenantId: string;
+  userEmail: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  ipAddress?: string;
+  reason?: string;
+  correlationId?: string;
+}): AuditLogEntry {
+  const lastLog = centralStore.auditLogs
+    .filter((l) => l.tenantId === params.tenantId)
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    .pop();
+
+  const prevHash = lastLog ? (lastLog as any).chainedHash || AUDIT_GENESIS_HASH : AUDIT_GENESIS_HASH;
+
+  const newLog: AuditLogEntry = {
+    id: `aud_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    tenantId: params.tenantId,
+    userEmail: params.userEmail,
+    action: params.action,
+    resourceType: params.resourceType,
+    resourceId: params.resourceId,
+    ipAddress: params.ipAddress || '127.0.0.1',
+    createdAt: new Date().toISOString(),
+    correlationId: params.correlationId,
+  };
+
+  (newLog as any).reason = params.reason;
+  (newLog as any).chainedHash = computeChainedLogHash(prevHash, newLog);
+
+  centralStore.auditLogs.push(newLog);
+  return newLog;
+}
+
 /**
  * Deterministic SHA-256 hash for an individual audit record linked to previous hash
  */

@@ -27,6 +27,10 @@ import {
   Zap,
   Store,
   FileCheck,
+  Sparkles,
+  Upload,
+  CreditCard,
+  ShieldAlert,
 } from 'lucide-react';
 import { useI18n } from '../../i18n/context.js';
 import { Badge } from '../ui/Badge.js';
@@ -51,6 +55,17 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadList, setUnreadList] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K' || e.key === 'j' || e.key === 'J')) {
+        e.preventDefault();
+        onRouteChange('/assistant');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onRouteChange]);
 
   React.useEffect(() => {
     const fetchAlerts = async () => {
@@ -98,6 +113,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     { id: '/notifications', label: isAr ? 'مركز الإشعارات والتنبيهات' : 'Notifications & Alerts', icon: Bell },
     { id: '/reminders', label: isAr ? 'التحصيل والتذكيرات (G4)' : 'Collections & Reminders (G4)', icon: Calendar },
     { id: '/automation', label: isAr ? 'محرك الأتمتة وقواعد الأعمال' : 'Automation & Rules', icon: Zap },
+    { id: '/assistant', label: isAr ? 'المساعد المالي الذكي (AI)' : 'Financial AI Assistant', icon: Sparkles },
+    { id: '/import-export', label: isAr ? 'مركز الاستيراد والتصدير' : 'Import & Export Center', icon: Upload },
+    { id: '/billing', label: isAr ? 'الباقة والاشتراك (SaaS)' : 'Billing & Subscription', icon: CreditCard },
+    { id: '/superadmin', label: isAr ? 'لوحة المشرف العام' : 'Super Admin Console', icon: ShieldAlert },
   ];
 
   const secondaryNavItems = [
@@ -200,8 +219,23 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </div>
           </div>
 
-          {/* Right / End: Language Toggle, Notifications & Auth State */}
+          {/* Right / End: AI Copilot, Language Toggle, Notifications & Auth State */}
           <div className="flex items-center gap-2">
+            {/* AI Assistant Quick Launcher */}
+            <button
+              onClick={() => onRouteChange('/assistant')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs transition ${
+                activeRoute === '/assistant'
+                  ? 'bg-indigo-600 text-white border-indigo-600'
+                  : 'bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 border-indigo-200'
+              }`}
+              title={isAr ? 'المساعد المالي الذكي (Ctrl+K)' : 'Financial AI Assistant (Ctrl+K)'}
+            >
+              <Sparkles className="w-4 h-4 animate-pulse text-indigo-500" />
+              <span className="hidden sm:inline">{isAr ? 'المساعد الذكي' : 'AI Copilot'}</span>
+              <kbd className="hidden md:inline px-1.5 py-0.5 text-[10px] rounded bg-white/60 dark:bg-black/20 font-mono">⌘K</kbd>
+            </button>
+
             {/* Language Switcher */}
             <button
               onClick={toggleLanguage}
