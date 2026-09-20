@@ -734,8 +734,8 @@ export function performThreeWayMatch(
         variances.push({
           itemId: pl.itemId,
           type: 'PRICE_VARIANCE',
-          message: `سعر وحدة الفاتورة (${bl.unitCostSar} ر.س) يختلف عن أمر الشراء (${pl.unitCostSar} ر.س)`,
-          messageAr: `سعر وحدة الفاتورة (${bl.unitCostSar} ر.س) يختلف عن أمر الشراء (${pl.unitCostSar} ر.س)`,
+          message: `سعر وحدة الفاتورة (${bl.unitCostSar} ﷼) يختلف عن أمر الشراء (${pl.unitCostSar} ﷼)`,
+          messageAr: `سعر وحدة الفاتورة (${bl.unitCostSar} ﷼) يختلف عن أمر الشراء (${pl.unitCostSar} ﷼)`,
           messageEn: `Bill price (${bl.unitCostSar}) differs from PO price (${pl.unitCostSar})`,
         });
       }

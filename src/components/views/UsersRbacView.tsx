@@ -424,12 +424,12 @@ export const UsersRbacView: React.FC<{ onNavigate: (route: string) => void }> = 
                   </div>
                   <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
                     <span className="text-slate-500 block text-[11px]">سعر البيع:</span>
-                    <span className="font-mono font-bold text-slate-900">{previewData.sellingPrice} ر.س</span>
+                    <span className="font-mono font-bold text-slate-900">{previewData.sellingPrice} ﷼</span>
                   </div>
                   <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
                     <span className="text-slate-500 block text-[11px]">تكلفة الشراء (Cost):</span>
                     {previewData.cost !== undefined ? (
-                      <span className="font-mono font-bold text-emerald-700">{previewData.cost} ر.س (متاح للمصرح لهم)</span>
+                      <span className="font-mono font-bold text-emerald-700">{previewData.cost} ﷼ (متاح للمصرح لهم)</span>
                     ) : (
                       <span className="font-bold text-red-600 flex items-center gap-1 text-[11px]">
                         <XCircle className="w-3.5 h-3.5" />
@@ -440,7 +440,7 @@ export const UsersRbacView: React.FC<{ onNavigate: (route: string) => void }> = 
                   <div className="p-2.5 bg-slate-50 rounded border border-slate-200">
                     <span className="text-slate-500 block text-[11px]">هامش الربح (Margin):</span>
                     {previewData.margin !== undefined ? (
-                      <span className="font-mono font-bold text-emerald-700">{previewData.margin} ر.س ({previewData.marginPercentage}%)</span>
+                      <span className="font-mono font-bold text-emerald-700">{previewData.margin} ﷼ ({previewData.marginPercentage}%)</span>
                     ) : (
                       <span className="font-bold text-red-600 flex items-center gap-1 text-[11px]">
                         <XCircle className="w-3.5 h-3.5" />

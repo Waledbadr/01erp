@@ -71,7 +71,7 @@ export const DocumentActionModal: React.FC<DocumentActionModalProps> = ({
     `فاتورة ضريبية #${doc.documentNumber} - ${doc.company.nameAr}`
   );
   const [emailBody, setEmailBody] = useState<string>(
-    `السادة / ${doc.party?.nameAr || 'العميل المحترم'}\n\nتحية طيبة وبعد،\n\nنرفق لكم نسخة من ${doc.documentNumber} بمبلغ إجمالي ${doc.totals.totalAmountSar.toFixed(2)} ر.س شامل ضريبة القيمة المضافة 15%.\n\nشاكرين ومقدرين حسن تعاونكم،\n${doc.company.nameAr}`
+    `السادة / ${doc.party?.nameAr || 'العميل المحترم'}\n\nتحية طيبة وبعد،\n\nنرفق لكم نسخة من ${doc.documentNumber} بمبلغ إجمالي ${doc.totals.totalAmountSar.toFixed(2)} ﷼ شامل ضريبة القيمة المضافة 15%.\n\nشاكرين ومقدرين حسن تعاونكم،\n${doc.company.nameAr}`
   );
   const [attachPdf, setAttachPdf] = useState(true);
   const [attachXml, setAttachXml] = useState(!!doc.zatca?.cryptographicStamp);
@@ -253,7 +253,7 @@ export const DocumentActionModal: React.FC<DocumentActionModalProps> = ({
                 </Badge>
               </div>
               <p className="text-xs text-slate-500">
-                المجموع: <span className="font-bold text-slate-800">{doc.totals.totalAmountSar.toFixed(2)} ر.س</span> | المستلم: {doc.party?.nameAr || 'عام'}
+                المجموع: <span className="font-bold text-slate-800">{doc.totals.totalAmountSar.toFixed(2)} ﷼</span> | المستلم: {doc.party?.nameAr || 'عام'}
               </p>
             </div>
           </div>

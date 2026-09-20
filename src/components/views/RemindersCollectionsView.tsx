@@ -371,14 +371,14 @@ export const RemindersCollectionsView: React.FC<RemindersCollectionsViewProps> =
           <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
             <p className="text-[11px] font-bold text-slate-500">{isAr ? 'إجمالي الذمم المدينة' : 'Total AR Balance'}</p>
             <p className="text-base sm:text-lg font-black text-slate-900 mt-0.5">
-              {summary.totalOutstandingSar.toLocaleString('en-US', { minimumFractionDigits: 2 })} ر.س
+              {summary.totalOutstandingSar.toLocaleString('en-US', { minimumFractionDigits: 2 })} ﷼
             </p>
           </div>
 
           <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200">
             <p className="text-[11px] font-bold text-amber-700">{isAr ? 'المستحقات المتأخرة' : 'Total Overdue'}</p>
             <p className="text-base sm:text-lg font-black text-amber-900 mt-0.5">
-              {summary.totalOverdueSar.toLocaleString('en-US', { minimumFractionDigits: 2 })} ر.س
+              {summary.totalOverdueSar.toLocaleString('en-US', { minimumFractionDigits: 2 })} ﷼
             </p>
           </div>
 
@@ -581,11 +581,11 @@ export const RemindersCollectionsView: React.FC<RemindersCollectionsViewProps> =
                               {inv.balanceDueSar.toLocaleString('en-US', {
                                 minimumFractionDigits: 2,
                               })}{' '}
-                              ر.س
+                              ﷼
                             </span>
                             {inv.paidAmountSar > 0 && (
                               <p className="text-[10px] text-slate-400">
-                                {isAr ? 'مسدد:' : 'Paid:'} {inv.paidAmountSar.toLocaleString()} ر.س
+                                {isAr ? 'مسدد:' : 'Paid:'} {inv.paidAmountSar.toLocaleString()} ﷼
                               </p>
                             )}
                           </td>
@@ -658,7 +658,7 @@ export const RemindersCollectionsView: React.FC<RemindersCollectionsViewProps> =
                 {invoices.map((i) => (
                   <option key={i.id} value={i.id}>
                     {i.invoiceNumber} — {isAr ? i.customerNameAr : i.customerNameEn} (
-                    {i.balanceDueSar.toLocaleString()} ر.س — {i.daysOverdue > 0 ? `+${i.daysOverdue}d` : `${i.daysOverdue}d`})
+                    {i.balanceDueSar.toLocaleString()} ﷼ — {i.daysOverdue > 0 ? `+${i.daysOverdue}d` : `${i.daysOverdue}d`})
                   </option>
                 ))}
               </select>

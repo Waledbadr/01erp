@@ -53,18 +53,18 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const formatCurrency = (amount: number | string): string => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    if (isNaN(num)) return '0.00 ' + (language === 'ar' ? 'ر.س' : 'SAR');
-    const formatted = new Intl.NumberFormat(language === 'ar' ? 'ar-SA' : 'en-US', {
+    if (isNaN(num)) return '0.00 ' + (language === 'ar' ? '﷼' : 'SAR');
+    const formatted = new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(num);
-    return `${formatted} ${language === 'ar' ? 'ر.س' : 'SAR'}`;
+    return `${formatted} ${language === 'ar' ? '﷼' : 'SAR'}`;
   };
 
   const formatDate = (dateInput: Date | string): string => {
     const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
     if (isNaN(date.getTime())) return '';
-    return new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA' : 'en-US', {
+    return new Intl.DateTimeFormat(language === 'ar' ? 'ar-SA-u-nu-latn' : 'en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

@@ -339,7 +339,7 @@ export function evaluateCustomerCredit(
       newBalanceSar: newBalance,
       exceededBySar: exceeded,
       reason: `Credit limit exceeded by ${exceeded.toFixed(2)} SAR. (Limit: ${limit.toFixed(2)} SAR, New Balance: ${newBalance.toFixed(2)} SAR)`,
-      reasonAr: `تم تجاوز الحد الائتماني بمقدار ${exceeded.toFixed(2)} ر.س. (الحد: ${limit.toFixed(2)} ر.س، الرصيد الجديد: ${newBalance.toFixed(2)} ر.س)`,
+      reasonAr: `تم تجاوز الحد الائتماني بمقدار ${exceeded.toFixed(2)} ﷼. (الحد: ${limit.toFixed(2)} ﷼، الرصيد الجديد: ${newBalance.toFixed(2)} ﷼)`,
     };
   }
 

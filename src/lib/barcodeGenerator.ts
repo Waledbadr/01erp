@@ -150,7 +150,7 @@ export const DEFAULT_LABEL_CONFIG: LabelDesignConfig = {
   showBarcodeNumber: true,
   showUnitName: true,
   companyNameAr: 'شركة الإنماء للحلول التجارية والتقنية',
-  currencySymbol: 'ر.س',
+  currencySymbol: '﷼',
 };
 
 export interface LabelPrintItem {

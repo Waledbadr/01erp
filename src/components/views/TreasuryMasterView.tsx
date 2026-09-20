@@ -487,7 +487,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
       showToast({
         title: isAr ? 'تم التحويل بنجاح' : 'Transfer Successful',
         message: isAr
-          ? `تم تحويل ${amt} ر.س برقم القيد ${tr?.journalNumber || ''}`
+          ? `تم تحويل ${amt} ﷼ برقم القيد ${tr?.journalNumber || ''}`
           : `Transferred ${amt} SAR under journal ${tr?.journalNumber || ''}`,
         type: 'success',
       });
@@ -604,7 +604,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
       showToast({
         title: isAr ? 'تمت المطابقة البنكية' : 'Reconciliation Completed',
         message: isAr
-          ? `رقم المطابقة: ${rec?.reconciliationNumber || ''} (الفارق: ${rec?.discrepancySar || 0} ر.س)`
+          ? `رقم المطابقة: ${rec?.reconciliationNumber || ''} (الفارق: ${rec?.discrepancySar || 0} ﷼)`
           : `Reconciliation ${rec?.reconciliationNumber || ''} completed (Discrepancy: ${rec?.discrepancySar || 0} SAR)`,
         type: rec?.discrepancySar === 0 ? 'success' : 'warning',
       });
@@ -1077,7 +1077,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
                     <th className="py-3.5 px-4 text-start">{isAr ? 'اسم الحساب / الخزينة' : 'Account Name'}</th>
                     <th className="py-3.5 px-4 text-start">{isAr ? 'النوع' : 'Type'}</th>
                     <th className="py-3.5 px-4 text-start">{isAr ? 'البنك / الآيبان / العهدة' : 'Details'}</th>
-                    <th className="py-3.5 px-4 text-end">{isAr ? 'الرصيد الدفتري (ر.س)' : 'Balance (SAR)'}</th>
+                    <th className="py-3.5 px-4 text-end">{isAr ? 'الرصيد الدفتري (﷼)' : 'Balance (SAR)'}</th>
                     <th className="py-3.5 px-4 text-center">{isAr ? 'الحالة' : 'Status'}</th>
                   </tr>
                 </thead>
@@ -1171,7 +1171,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
                     <th className="py-3.5 px-4 text-start">{isAr ? 'المودع / الدافع' : 'Payer'}</th>
                     <th className="py-3.5 px-4 text-start">{isAr ? 'طريقة الدفع' : 'Payment Method'}</th>
                     <th className="py-3.5 px-4 text-start">{isAr ? 'قيد اليومية' : 'GL Journal'}</th>
-                    <th className="py-3.5 px-4 text-end">{isAr ? 'المبلغ (ر.س)' : 'Amount (SAR)'}</th>
+                    <th className="py-3.5 px-4 text-end">{isAr ? 'المبلغ (﷼)' : 'Amount (SAR)'}</th>
                     <th className="py-3.5 px-4 text-center">{isAr ? 'الحالة' : 'Status'}</th>
                     <th className="py-3.5 px-4 text-center">{isAr ? 'الإجراءات' : 'Actions'}</th>
                   </tr>
@@ -1261,7 +1261,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
                     <th className="py-3.5 px-4 text-start">{isAr ? 'التصنيف' : 'Category'}</th>
                     <th className="py-3.5 px-4 text-start">{isAr ? 'طريقة الصرف' : 'Method'}</th>
                     <th className="py-3.5 px-4 text-start">{isAr ? 'قيد اليومية' : 'GL Journal'}</th>
-                    <th className="py-3.5 px-4 text-end">{isAr ? 'المبلغ (ر.س)' : 'Amount (SAR)'}</th>
+                    <th className="py-3.5 px-4 text-end">{isAr ? 'المبلغ (﷼)' : 'Amount (SAR)'}</th>
                     <th className="py-3.5 px-4 text-center">{isAr ? 'الحالة' : 'Status'}</th>
                     <th className="py-3.5 px-4 text-center">{isAr ? 'الإجراءات' : 'Actions'}</th>
                   </tr>
@@ -1568,7 +1568,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
                     <th className="py-3.5 px-4 text-start">{isAr ? 'البنك المسحوب عليه' : 'Bank'}</th>
                     <th className="py-3.5 px-4 text-start">{isAr ? 'تاريخ الاستحقاق' : 'Due Date'}</th>
                     <th className="py-3.5 px-4 text-start">{isAr ? 'الطرف / المستفيد' : 'Party'}</th>
-                    <th className="py-3.5 px-4 text-end">{isAr ? 'المبلغ (ر.س)' : 'Amount (SAR)'}</th>
+                    <th className="py-3.5 px-4 text-end">{isAr ? 'المبلغ (﷼)' : 'Amount (SAR)'}</th>
                     <th className="py-3.5 px-4 text-center">{isAr ? 'الحالة' : 'Status'}</th>
                     <th className="py-3.5 px-4 text-center">{isAr ? 'الإجراء' : 'Actions'}</th>
                   </tr>
@@ -1800,7 +1800,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              {isAr ? 'الرصيد الافتتاحي (ر.س)' : 'Opening Balance (SAR)'}
+              {isAr ? 'الرصيد الافتتاحي (﷼)' : 'Opening Balance (SAR)'}
             </label>
             <Input
               type="number"
@@ -1894,7 +1894,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                {isAr ? 'المبلغ المستلم (ر.س)' : 'Total Amount (SAR)'}
+                {isAr ? 'المبلغ المستلم (﷼)' : 'Total Amount (SAR)'}
               </label>
               <Input
                 type="number"
@@ -2046,7 +2046,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                {isAr ? 'المبلغ الإجمالي (ر.س)' : 'Total Amount (SAR)'}
+                {isAr ? 'المبلغ الإجمالي (﷼)' : 'Total Amount (SAR)'}
               </label>
               <Input
                 type="number"
@@ -2172,7 +2172,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                {isAr ? 'مبلغ التحويل (ر.س)' : 'Transfer Amount (SAR)'}
+                {isAr ? 'مبلغ التحويل (﷼)' : 'Transfer Amount (SAR)'}
               </label>
               <Input
                 type="number"
@@ -2293,7 +2293,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
               </div>
               <div>
                 <label className="block text-xs text-slate-600 mb-1">
-                  {isAr ? 'المبلغ قبل الضريبة (ر.س)' : 'Taxable Amount (SAR)'}
+                  {isAr ? 'المبلغ قبل الضريبة (﷼)' : 'Taxable Amount (SAR)'}
                 </label>
                 <Input
                   type="number"
@@ -2349,7 +2349,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              {isAr ? 'الرصيد الختامي في كشف البنك (ر.س)' : 'Ending Statement Balance (SAR)'}
+              {isAr ? 'الرصيد الختامي في كشف البنك (﷼)' : 'Ending Statement Balance (SAR)'}
             </label>
             <Input
               type="number"

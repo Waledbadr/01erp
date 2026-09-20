@@ -457,7 +457,7 @@ export const AssistantMasterView: React.FC<AssistantMasterViewProps> = ({
                                   {isAr ? metric.labelAr : metric.labelEn}
                                 </span>
                                 <span className="text-sm font-bold text-slate-900 dark:text-white mt-0.5 block">
-                                  {metric.value} {metric.unit || (isAr ? 'ر.س' : 'SAR')}
+                                  {metric.value} {metric.unit || (isAr ? '﷼' : 'SAR')}
                                 </span>
                               </div>
                             ))}

@@ -337,9 +337,9 @@ export function formatBytes(bytes: number): string {
 }
 
 export function formatSar(sar: number): string {
-  return new Intl.NumberFormat('ar-SA', {
-    style: 'currency',
-    currency: 'SAR',
+  const formatted = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(sar);
+  return `${formatted} ﷼`;
 }

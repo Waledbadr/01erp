@@ -420,7 +420,7 @@ export const PointOfSaleView: React.FC = () => {
       });
       toastSuccess(
         isAr
-          ? `تم تسجيل ${cashMovementType === 'CASH_IN' ? 'الإيداع' : 'السحب'} بقيمة ${mov.amountSar} ر.س`
+          ? `تم تسجيل ${cashMovementType === 'CASH_IN' ? 'الإيداع' : 'السحب'} بقيمة ${mov.amountSar} ﷼`
           : `Cash movement recorded: ${mov.amountSar} SAR`
       );
       setCashMovementModalOpen(false);
@@ -707,12 +707,12 @@ export const PointOfSaleView: React.FC = () => {
               <div className="hidden md:flex items-center gap-1 text-slate-300 border-s border-slate-700 ps-2">
                 <Banknote className="w-3.5 h-3.5 text-slate-400" />
                 <span>{isAr ? 'العهدة:' : 'Float:'}</span>
-                <span className="font-mono font-bold text-white">{activeShift.openingFloatSar} ر.س</span>
+                <span className="font-mono font-bold text-white">{activeShift.openingFloatSar} ﷼</span>
               </div>
               <div className="flex items-center gap-1 text-slate-300 border-s border-slate-700 ps-2">
                 <DollarSign className="w-3.5 h-3.5 text-slate-400" />
                 <span>{isAr ? 'المبيعات:' : 'Sales:'}</span>
-                <span className="font-mono font-bold text-emerald-400">{activeShift.netSalesSar} ر.س</span>
+                <span className="font-mono font-bold text-emerald-400">{activeShift.netSalesSar} ﷼</span>
               </div>
             </div>
           ) : (
@@ -874,7 +874,7 @@ export const PointOfSaleView: React.FC = () => {
                     <div>
                       <div className="text-sm sm:text-base font-extrabold font-mono text-emerald-400">
                         {product.unitPriceSar.toFixed(2)}{' '}
-                        <span className="text-[10px] font-normal text-slate-400">ر.س</span>
+                        <span className="text-[10px] font-normal text-slate-400">﷼</span>
                       </div>
                       <div className="text-[10px] text-slate-500">
                         {isAr ? 'شامل الضريبة 15%' : 'Incl. 15% VAT'}
@@ -972,7 +972,7 @@ export const PointOfSaleView: React.FC = () => {
                     {isAr ? item.nameAr : item.nameEn}
                   </h4>
                   <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
-                    <span className="font-mono">{item.unitPriceSar.toFixed(2)} ر.س</span>
+                    <span className="font-mono">{item.unitPriceSar.toFixed(2)} ﷼</span>
                     <span>×</span>
                     <span className="font-bold text-white">{item.quantity}</span>
                     <span className="text-slate-600">•</span>
@@ -1031,17 +1031,17 @@ export const PointOfSaleView: React.FC = () => {
             <div className="space-y-1 text-xs">
               <div className="flex justify-between text-slate-400">
                 <span>{isAr ? 'المجموع قبل الضريبة:' : 'Subtotal Excl. VAT:'}</span>
-                <span className="font-mono text-slate-200">{cartSummary.subtotal.toFixed(2)} ر.س</span>
+                <span className="font-mono text-slate-200">{cartSummary.subtotal.toFixed(2)} ﷼</span>
               </div>
               {cartSummary.discountTotal > 0 && (
                 <div className="flex justify-between text-amber-400">
                   <span>{isAr ? 'إجمالي الخصم:' : 'Discount Total:'}</span>
-                  <span className="font-mono">-{cartSummary.discountTotal.toFixed(2)} ر.س</span>
+                  <span className="font-mono">-{cartSummary.discountTotal.toFixed(2)} ﷼</span>
                 </div>
               )}
               <div className="flex justify-between text-slate-400">
                 <span>{isAr ? 'ضريبة القيمة المضافة (15%):' : 'VAT (15%):'}</span>
-                <span className="font-mono text-slate-200">{cartSummary.vatTotal.toFixed(2)} ر.س</span>
+                <span className="font-mono text-slate-200">{cartSummary.vatTotal.toFixed(2)} ﷼</span>
               </div>
             </div>
 
@@ -1057,7 +1057,7 @@ export const PointOfSaleView: React.FC = () => {
               </div>
               <div className="text-2xl font-black font-mono text-emerald-400">
                 {cartSummary.grandTotal.toFixed(2)}{' '}
-                <span className="text-xs font-semibold text-slate-400">ر.س</span>
+                <span className="text-xs font-semibold text-slate-400">﷼</span>
               </div>
             </div>
 
@@ -1124,13 +1124,13 @@ export const PointOfSaleView: React.FC = () => {
               <div>
                 <span className="text-xs text-slate-400">{isAr ? 'المبلغ المطلوب سداده:' : 'Total Due:'}</span>
                 <div className="text-2xl font-black font-mono text-white">
-                  {cartSummary.grandTotal.toFixed(2)} <span className="text-xs text-slate-400">ر.س</span>
+                  {cartSummary.grandTotal.toFixed(2)} <span className="text-xs text-slate-400">﷼</span>
                 </div>
               </div>
               <div className="text-end">
                 <span className="text-xs text-slate-400">{isAr ? 'المدفوع حالياً:' : 'Total Entered:'}</span>
                 <div className="text-xl font-bold font-mono text-emerald-400">
-                  {totalPaidInModal.toFixed(2)} <span className="text-xs text-slate-400">ر.س</span>
+                  {totalPaidInModal.toFixed(2)} <span className="text-xs text-slate-400">﷼</span>
                 </div>
               </div>
             </div>
@@ -1139,13 +1139,13 @@ export const PointOfSaleView: React.FC = () => {
             {changeDueInModal > 0 && (
               <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-800 flex items-center justify-between text-emerald-300">
                 <span className="text-xs font-semibold">{isAr ? 'المتبقي للعميل (فكة):' : 'Change Due:'}</span>
-                <span className="text-lg font-mono font-extrabold">{changeDueInModal.toFixed(2)} ر.س</span>
+                <span className="text-lg font-mono font-extrabold">{changeDueInModal.toFixed(2)} ﷼</span>
               </div>
             )}
             {remainingBalanceInModal > 0 && (
               <div className="p-3 rounded-xl bg-amber-950/60 border border-amber-800 flex items-center justify-between text-amber-300">
                 <span className="text-xs font-semibold">{isAr ? 'المتبقي لإتمام الفاتورة:' : 'Remaining Balance:'}</span>
-                <span className="text-lg font-mono font-extrabold">{remainingBalanceInModal.toFixed(2)} ر.س</span>
+                <span className="text-lg font-mono font-extrabold">{remainingBalanceInModal.toFixed(2)} ﷼</span>
               </div>
             )}
 
@@ -1215,7 +1215,7 @@ export const PointOfSaleView: React.FC = () => {
                     }}
                     className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-mono text-xs font-bold cursor-pointer"
                   >
-                    {bill} ر.س
+                    {bill} ﷼
                   </button>
                 ))}
                 <button
@@ -1240,7 +1240,7 @@ export const PointOfSaleView: React.FC = () => {
                       {split.tenderType}
                     </span>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-white">{split.amountSar.toFixed(2)} ر.س</span>
+                      <span className="font-mono font-bold text-white">{split.amountSar.toFixed(2)} ﷼</span>
                       <button
                         onClick={() => setPaymentSplits((prev) => prev.filter((_, idx) => idx !== i))}
                         className="text-slate-500 hover:text-rose-400 cursor-pointer"
@@ -1311,7 +1311,7 @@ export const PointOfSaleView: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>التاريخ:</span>
-                  <span>{new Date(lastCompletedOrder.createdAt).toLocaleString('ar-SA')}</span>
+                  <span>{new Date(lastCompletedOrder.createdAt).toLocaleString('ar-SA-u-nu-latn')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>الكاشير:</span>
@@ -1337,7 +1337,7 @@ export const PointOfSaleView: React.FC = () => {
                         {item.quantity} {item.uom} × {item.unitPriceSar.toFixed(2)}
                       </div>
                     </div>
-                    <div className="font-bold">{item.totalSar.toFixed(2)} ر.س</div>
+                    <div className="font-bold">{item.totalSar.toFixed(2)} ﷼</div>
                   </div>
                 ))}
               </div>
@@ -1346,21 +1346,21 @@ export const PointOfSaleView: React.FC = () => {
               <div className="space-y-1 text-[11px] border-b border-dashed border-slate-300 pb-2">
                 <div className="flex justify-between text-slate-700">
                   <span>المجموع قبل الضريبة:</span>
-                  <span>{lastCompletedOrder.subtotalSar.toFixed(2)} ر.س</span>
+                  <span>{lastCompletedOrder.subtotalSar.toFixed(2)} ﷼</span>
                 </div>
                 {lastCompletedOrder.discountTotalSar > 0 && (
                   <div className="flex justify-between text-slate-700">
                     <span>الخصم:</span>
-                    <span>-{lastCompletedOrder.discountTotalSar.toFixed(2)} ر.س</span>
+                    <span>-{lastCompletedOrder.discountTotalSar.toFixed(2)} ﷼</span>
                   </div>
                 )}
                 <div className="flex justify-between text-slate-700">
                   <span>ضريبة القيمة المضافة (15%):</span>
-                  <span>{lastCompletedOrder.vatTotalSar.toFixed(2)} ر.س</span>
+                  <span>{lastCompletedOrder.vatTotalSar.toFixed(2)} ﷼</span>
                 </div>
                 <div className="flex justify-between font-black text-sm text-slate-950 pt-1 border-t border-slate-200">
                   <span>المجموع الكلي:</span>
-                  <span>{lastCompletedOrder.grandTotalSar.toFixed(2)} ر.س</span>
+                  <span>{lastCompletedOrder.grandTotalSar.toFixed(2)} ﷼</span>
                 </div>
               </div>
 
@@ -1369,13 +1369,13 @@ export const PointOfSaleView: React.FC = () => {
                 {lastCompletedOrder.payments.map((p, idx) => (
                   <div key={idx} className="flex justify-between">
                     <span>طريقة الدفع ({p.tenderType}):</span>
-                    <span>{p.amountSar.toFixed(2)} ر.س</span>
+                    <span>{p.amountSar.toFixed(2)} ﷼</span>
                   </div>
                 ))}
                 {lastCompletedOrder.changeDueSar > 0 && (
                   <div className="flex justify-between font-bold text-slate-900">
                     <span>المتبقي للعميل (فكة):</span>
-                    <span>{lastCompletedOrder.changeDueSar.toFixed(2)} ر.س</span>
+                    <span>{lastCompletedOrder.changeDueSar.toFixed(2)} ﷼</span>
                   </div>
                 )}
               </div>
@@ -1588,21 +1588,21 @@ export const PointOfSaleView: React.FC = () => {
               </div>
               <div className="flex justify-between text-slate-400">
                 <span>تاريخ الفتح:</span>
-                <span className="text-slate-200">{new Date(xReportData.shift.openedAt).toLocaleTimeString('ar-SA')}</span>
+                <span className="text-slate-200">{new Date(xReportData.shift.openedAt).toLocaleTimeString('ar-SA-u-nu-latn')}</span>
               </div>
               <div className="h-px bg-slate-800 my-1" />
 
               <div className="flex justify-between text-slate-300">
                 <span>العهدة الافتتاحية:</span>
-                <span className="font-bold text-white">{xReportData.shift.openingFloatSar.toFixed(2)} ر.س</span>
+                <span className="font-bold text-white">{xReportData.shift.openingFloatSar.toFixed(2)} ﷼</span>
               </div>
               <div className="flex justify-between text-emerald-400 font-bold">
                 <span>إجمالي المبيعات الصافية:</span>
-                <span>{xReportData.shift.netSalesSar.toFixed(2)} ر.س</span>
+                <span>{xReportData.shift.netSalesSar.toFixed(2)} ﷼</span>
               </div>
               <div className="flex justify-between text-slate-300">
                 <span>ضريبة القيمة المضافة 15%:</span>
-                <span>{xReportData.shift.totalVatSar.toFixed(2)} ر.س</span>
+                <span>{xReportData.shift.totalVatSar.toFixed(2)} ﷼</span>
               </div>
               <div className="flex justify-between text-slate-300">
                 <span>عدد العمليات المنجزة:</span>
@@ -1614,22 +1614,22 @@ export const PointOfSaleView: React.FC = () => {
               <div className="space-y-1 text-slate-300 text-[11px] ps-2">
                 <div className="flex justify-between">
                   <span>- مبيعات نقدية (Cash):</span>
-                  <span>{xReportData.shift.cashSalesSar.toFixed(2)} ر.س</span>
+                  <span>{xReportData.shift.cashSalesSar.toFixed(2)} ﷼</span>
                 </div>
                 <div className="flex justify-between">
                   <span>- شبكة مدى (Mada):</span>
-                  <span>{xReportData.shift.madaSalesSar.toFixed(2)} ر.س</span>
+                  <span>{xReportData.shift.madaSalesSar.toFixed(2)} ﷼</span>
                 </div>
                 <div className="flex justify-between">
                   <span>- بطاقات ائتمان (Credit):</span>
-                  <span>{xReportData.shift.creditCardSalesSar.toFixed(2)} ر.س</span>
+                  <span>{xReportData.shift.creditCardSalesSar.toFixed(2)} ﷼</span>
                 </div>
               </div>
 
               <div className="h-px bg-slate-800 my-1" />
               <div className="flex justify-between text-amber-400 font-extrabold text-sm">
                 <span>النقد المتوقع بالدرج:</span>
-                <span>{xReportData.shift.expectedCashSar.toFixed(2)} ر.س</span>
+                <span>{xReportData.shift.expectedCashSar.toFixed(2)} ﷼</span>
               </div>
             </div>
 
@@ -1670,24 +1670,24 @@ export const PointOfSaleView: React.FC = () => {
               <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1.5 font-mono">
                 <div className="flex justify-between text-slate-400">
                   <span>العهدة الافتتاحية:</span>
-                  <span>{activeShift.openingFloatSar.toFixed(2)} ر.س</span>
+                  <span>{activeShift.openingFloatSar.toFixed(2)} ﷼</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>المبيعات النقدية:</span>
-                  <span>+{activeShift.cashSalesSar.toFixed(2)} ر.س</span>
+                  <span>+{activeShift.cashSalesSar.toFixed(2)} ﷼</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>إيداعات نقدية:</span>
-                  <span>+{activeShift.totalCashInSar.toFixed(2)} ر.س</span>
+                  <span>+{activeShift.totalCashInSar.toFixed(2)} ﷼</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
                   <span>سحوبات نقدية:</span>
-                  <span>-{activeShift.totalCashOutSar.toFixed(2)} ر.س</span>
+                  <span>-{activeShift.totalCashOutSar.toFixed(2)} ﷼</span>
                 </div>
                 <div className="h-px bg-slate-800 my-1" />
                 <div className="flex justify-between text-amber-400 font-extrabold text-sm">
                   <span>النقد المحسوب والمتوقع:</span>
-                  <span>{activeShift.expectedCashSar.toFixed(2)} ر.س</span>
+                  <span>{activeShift.expectedCashSar.toFixed(2)} ﷼</span>
                 </div>
               </div>
 
@@ -1718,7 +1718,7 @@ export const PointOfSaleView: React.FC = () => {
                 >
                   <span>{isAr ? 'فرق الصندوق (عجز / فائض):' : 'Cash Difference:'}</span>
                   <span>
-                    {(Number(actualCashCountedInput) - activeShift.expectedCashSar).toFixed(2)} ر.س (
+                    {(Number(actualCashCountedInput) - activeShift.expectedCashSar).toFixed(2)} ﷼ (
                     {Number(actualCashCountedInput) === activeShift.expectedCashSar
                       ? isAr
                         ? 'متطابق'
@@ -1792,7 +1792,7 @@ export const PointOfSaleView: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-white">{held.customerName}</span>
                     <span className="text-[10px] text-slate-500 font-mono">
-                      {new Date(held.heldAt).toLocaleTimeString('ar-SA')}
+                      {new Date(held.heldAt).toLocaleTimeString('ar-SA-u-nu-latn')}
                     </span>
                   </div>
 
@@ -1800,7 +1800,7 @@ export const PointOfSaleView: React.FC = () => {
                     <span>
                       {held.items.length} {isAr ? 'أصناف' : 'Items'}
                     </span>
-                    <span className="font-mono font-bold text-emerald-400">{held.grandTotalSar.toFixed(2)} ر.س</span>
+                    <span className="font-mono font-bold text-emerald-400">{held.grandTotalSar.toFixed(2)} ﷼</span>
                   </div>
 
                   <div className="flex items-center justify-end gap-2 pt-1 border-t border-slate-850">

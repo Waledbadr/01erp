@@ -151,7 +151,7 @@ export const DocumentsMasterView: React.FC<DocumentsMasterViewProps> = ({
                       </p>
                       <p className="flex justify-between">
                         <span>الإجمالي:</span>
-                        <span className="font-mono font-bold text-emerald-800">{docData.totals.totalAmountSar.toFixed(2)} ر.س</span>
+                        <span className="font-mono font-bold text-emerald-800">{docData.totals.totalAmountSar.toFixed(2)} ﷼</span>
                       </p>
                     </div>
                   </div>

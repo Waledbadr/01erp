@@ -139,7 +139,7 @@ export function validateJournalBalance(lines: JournalLine[]): BalanceValidationR
     errorAr = 'لا يمكن ترحيل قيد فارغ أو بقيمة صفرية.';
   } else if (!isValid) {
     error = `Total debits (${totalDebitsStr} SAR) do not equal total credits (${totalCreditsStr} SAR). Discrepancy: ${diffStr} SAR.`;
-    errorAr = `إجمالي المدين (${totalDebitsStr} ر.س) لا يساوي إجمالي الدائن (${totalCreditsStr} ر.س). الفارق: ${diffStr} ر.س.`;
+    errorAr = `إجمالي المدين (${totalDebitsStr} ﷼) لا يساوي إجمالي الدائن (${totalCreditsStr} ﷼). الفارق: ${diffStr} ﷼.`;
   }
 
   return {
@@ -153,18 +153,18 @@ export function validateJournalBalance(lines: JournalLine[]): BalanceValidationR
 }
 
 /**
- * Format currency amount with appropriate locale symbols.
+ * Format currency amount with appropriate locale symbols and English digits.
  */
 export function formatCurrency(amount: string | number, lang: 'ar' | 'en' = 'ar'): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-  if (isNaN(num)) return lang === 'ar' ? '٠٫٠٠ ر.س' : 'SAR 0.00';
+  if (isNaN(num)) return lang === 'ar' ? '0.00 ﷼' : 'SAR 0.00';
 
-  const parts = num.toLocaleString(lang === 'ar' ? 'ar-SA' : 'en-US', {
+  const parts = num.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-  return lang === 'ar' ? `${parts} ر.س` : `SAR ${parts}`;
+  return lang === 'ar' ? `${parts} ﷼` : `SAR ${parts}`;
 }
 
 /**

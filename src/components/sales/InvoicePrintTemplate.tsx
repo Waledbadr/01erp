@@ -222,31 +222,31 @@ export const InvoicePrintTemplate: React.FC<InvoicePrintTemplateProps> = ({
           <div className="w-full sm:w-80 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2">
             <div className="flex justify-between text-slate-600">
               <span>الإجمالي غير شامل الضريبة / Subtotal:</span>
-              <span className="font-mono font-medium">{invoice.subtotalSar.toFixed(2)} ر.س</span>
+              <span className="font-mono font-medium">{invoice.subtotalSar.toFixed(2)} ﷼</span>
             </div>
 
             {invoice.discountTotalSar > 0 && (
               <div className="flex justify-between text-amber-700">
                 <span>إجمالي الخصم / Discount:</span>
-                <span className="font-mono font-medium">-{invoice.discountTotalSar.toFixed(2)} ر.س</span>
+                <span className="font-mono font-medium">-{invoice.discountTotalSar.toFixed(2)} ﷼</span>
               </div>
             )}
 
             <div className="flex justify-between text-slate-600">
               <span>المبلغ الخاضع للضريبة / Taxable Amount:</span>
               <span className="font-mono font-medium">
-                {(invoice.subtotalSar - invoice.discountTotalSar).toFixed(2)} ر.س
+                {(invoice.subtotalSar - invoice.discountTotalSar).toFixed(2)} ﷼
               </span>
             </div>
 
             <div className="flex justify-between text-emerald-800 font-semibold border-t border-slate-200 pt-1.5">
               <span>ضريبة القيمة المضافة (15%) / VAT Total:</span>
-              <span className="font-mono">{invoice.taxTotalSar.toFixed(2)} ر.س</span>
+              <span className="font-mono">{invoice.taxTotalSar.toFixed(2)} ﷼</span>
             </div>
 
             <div className="flex justify-between items-center text-sm font-bold text-slate-900 bg-emerald-100/70 p-2 rounded-lg border border-emerald-300">
               <span>المجموع الإجمالي / Grand Total:</span>
-              <span className="font-mono text-base text-emerald-950">{invoice.totalAmountSar.toFixed(2)} ر.س</span>
+              <span className="font-mono text-base text-emerald-950">{invoice.totalAmountSar.toFixed(2)} ﷼</span>
             </div>
           </div>
         </div>

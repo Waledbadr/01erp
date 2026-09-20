@@ -22,7 +22,7 @@ export const ar = {
     status: 'الحالة',
     date: 'التاريخ',
     amount: 'المبلغ',
-    currency: 'ر.س',
+    currency: '﷼',
     currencyCode: 'SAR',
     language: 'اللغة',
     arabic: 'العربية',

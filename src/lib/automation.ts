@@ -156,7 +156,7 @@ export interface FieldDefinition {
 export const AVAILABLE_FIELDS: FieldDefinition[] = [
   // Sales
   { field: 'documentType', labelAr: 'نوع المستند', labelEn: 'Document Type', category: 'Sales', type: 'string', sampleValues: ['SALES_INVOICE', 'SIMPLIFIED_INVOICE', 'QUOTATION', 'PURCHASE_BILL'] },
-  { field: 'totalAmountSar', labelAr: 'المبلغ الإجمالي (ر.س)', labelEn: 'Total Amount (SAR)', category: 'Sales', type: 'number', sampleValues: [5000, 10000, 50000] },
+  { field: 'totalAmountSar', labelAr: 'المبلغ الإجمالي (﷼)', labelEn: 'Total Amount (SAR)', category: 'Sales', type: 'number', sampleValues: [5000, 10000, 50000] },
   { field: 'paymentMethod', labelAr: 'طريقة الدفع', labelEn: 'Payment Method', category: 'Sales', type: 'string', sampleValues: ['CASH', 'MADA', 'CREDIT', 'BANK_TRANSFER'] },
   { field: 'branchId', labelAr: 'الفرع', labelEn: 'Branch', category: 'Sales', type: 'string' },
   { field: 'customerId', labelAr: 'معرف العميل', labelEn: 'Customer ID', category: 'Sales', type: 'string' },
@@ -164,8 +164,8 @@ export const AVAILABLE_FIELDS: FieldDefinition[] = [
   
   // Receivables & Collections
   { field: 'daysOverdue', labelAr: 'أيام التأخير', labelEn: 'Days Overdue', category: 'Parties', type: 'number', sampleValues: [7, 15, 30, 60] },
-  { field: 'balanceDueSar', labelAr: 'المبلغ المستحق (ر.س)', labelEn: 'Balance Due (SAR)', category: 'Parties', type: 'number', sampleValues: [500, 2000, 10000] },
-  { field: 'creditDeficitSar', labelAr: 'تجاوز السقف الائتماني (ر.س)', labelEn: 'Credit Deficit (SAR)', category: 'Parties', type: 'number', sampleValues: [1000, 5000] },
+  { field: 'balanceDueSar', labelAr: 'المبلغ المستحق (﷼)', labelEn: 'Balance Due (SAR)', category: 'Parties', type: 'number', sampleValues: [500, 2000, 10000] },
+  { field: 'creditDeficitSar', labelAr: 'تجاوز السقف الائتماني (﷼)', labelEn: 'Credit Deficit (SAR)', category: 'Parties', type: 'number', sampleValues: [1000, 5000] },
   { field: 'currentBalanceSar', labelAr: 'الرصيد القائم للعميل', labelEn: 'Customer Balance (SAR)', category: 'Parties', type: 'number' },
   
   // Inventory

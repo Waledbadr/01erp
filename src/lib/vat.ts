@@ -797,10 +797,10 @@ export function reconcileVatWithGl(params: {
     notes.push('Zero-discrepancy invariant verified: VAT Ledger matches GL tax control accounts to the exact Halala.');
   } else {
     if (outputDiscrepancy > 0) {
-      notes.push(`توجد فجوة في ضريبة المخرجات قدرها ${outputDiscrepancy} ر.س.`);
+      notes.push(`توجد فجوة في ضريبة المخرجات قدرها ${outputDiscrepancy} ﷼.`);
     }
     if (inputDiscrepancy > 0) {
-      notes.push(`توجد فجوة في ضريبة المدخلات قدرها ${inputDiscrepancy} ر.س.`);
+      notes.push(`توجد فجوة في ضريبة المدخلات قدرها ${inputDiscrepancy} ﷼.`);
     }
   }
 

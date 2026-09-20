@@ -999,12 +999,12 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
                       </td>
 
                       <td className="py-3 px-4 text-end font-mono text-slate-700">
-                        {summary.currentWac !== undefined ? `${summary.currentWac.toFixed(2)} ر.س` : '***'}
+                        {summary.currentWac !== undefined ? `${summary.currentWac.toFixed(2)} ﷼` : '***'}
                       </td>
 
                       <td className="py-3 px-4 text-end font-mono font-bold text-emerald-900 bg-emerald-50/30">
                         {summary.totalValuationSar !== undefined
-                          ? `${summary.totalValuationSar.toLocaleString('en-US', { minimumFractionDigits: 2 })} ر.س`
+                          ? `${summary.totalValuationSar.toLocaleString('en-US', { minimumFractionDigits: 2 })} ﷼`
                           : '***'}
                       </td>
                     </tr>
@@ -1256,7 +1256,7 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
 
             <div>
               <label className="font-bold text-slate-700 block mb-1">
-                {isAr ? 'سعر البيع الافتراضي (ر.س) *' : 'Default Sale Price (SAR) *'}
+                {isAr ? 'سعر البيع الافتراضي (﷼) *' : 'Default Sale Price (SAR) *'}
               </label>
               <Input
                 type="number"
@@ -1269,7 +1269,7 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
 
             <div>
               <label className="font-bold text-slate-700 block mb-1">
-                {isAr ? 'تكلفة الشراء التقديرية (ر.س)' : 'Estimated Cost (SAR)'}
+                {isAr ? 'تكلفة الشراء التقديرية (﷼)' : 'Estimated Cost (SAR)'}
               </label>
               <Input
                 type="number"

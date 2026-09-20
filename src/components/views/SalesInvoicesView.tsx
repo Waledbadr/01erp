@@ -676,7 +676,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
           </div>
           <p className="text-xl font-bold text-slate-900 mt-2 font-mono">
             {stats.totalSalesPosted.toLocaleString('en-US', { minimumFractionDigits: 2 })}{' '}
-            <span className="text-xs font-normal text-slate-500">ر.س</span>
+            <span className="text-xs font-normal text-slate-500">﷼</span>
           </p>
           <span className="text-[11px] text-emerald-700 font-medium mt-1 inline-block">
             {stats.countPosted} {isAr ? 'فاتورة مرحلة للأستاذ العام' : 'posted invoices'}
@@ -694,7 +694,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
           </div>
           <p className="text-xl font-bold text-slate-900 mt-2 font-mono">
             {stats.totalVatPosted.toLocaleString('en-US', { minimumFractionDigits: 2 })}{' '}
-            <span className="text-xs font-normal text-slate-500">ر.س</span>
+            <span className="text-xs font-normal text-slate-500">﷼</span>
           </p>
           <span className="text-[11px] text-slate-500 font-medium mt-1 inline-block">
             {isAr ? 'مستحقة للإقرار الضريبي' : 'output tax liability'}
@@ -837,7 +837,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                     <th className="p-3 text-start">{isAr ? 'طريقة السداد' : 'Payment'}</th>
                     <th className="p-3 text-end">{isAr ? 'الخاضع للضريبة' : 'Taxable'}</th>
                     <th className="p-3 text-end">{isAr ? 'الضريبة 15%' : 'VAT 15%'}</th>
-                    <th className="p-3 text-end">{isAr ? 'الإجمالي (ر.س)' : 'Total (SAR)'}</th>
+                    <th className="p-3 text-end">{isAr ? 'الإجمالي (﷼)' : 'Total (SAR)'}</th>
                     <th className="p-3 text-center">{isAr ? 'الحالة' : 'Status'}</th>
                     <th className="p-3 text-center">{isAr ? 'ZATCA' : 'ZATCA'}</th>
                     <th className="p-3 text-center">{isAr ? 'الإجراءات' : 'Actions'}</th>
@@ -1041,7 +1041,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                       <td className="p-3 font-mono text-slate-600">{quote.issueDate}</td>
                       <td className="p-3 font-mono text-slate-600">{quote.expiryDate}</td>
                       <td className="p-3 text-end font-mono text-slate-700">{quote.subtotalSar.toFixed(2)}</td>
-                      <td className="p-3 text-end font-mono font-bold text-slate-900">{quote.totalAmountSar.toFixed(2)} ر.س</td>
+                      <td className="p-3 text-end font-mono font-bold text-slate-900">{quote.totalAmountSar.toFixed(2)} ﷼</td>
                       <td className="p-3 text-center">
                         {quote.status === 'CONVERTED' ? (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800 inline-flex items-center gap-1">
@@ -1135,7 +1135,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                       <td className="p-3 text-slate-600 max-w-xs truncate">{cn.reasonDescription}</td>
                       <td className="p-3 text-end font-mono text-slate-700">{cn.subtotalSar.toFixed(2)}</td>
                       <td className="p-3 text-end font-mono text-rose-700 font-medium">-{cn.taxTotalSar.toFixed(2)}</td>
-                      <td className="p-3 text-end font-mono font-bold text-rose-700">-{cn.totalAmountSar.toFixed(2)} ر.س</td>
+                      <td className="p-3 text-end font-mono font-bold text-rose-700">-{cn.totalAmountSar.toFixed(2)} ﷼</td>
                       <td className="p-3 text-center font-mono font-bold text-indigo-700">{cn.postedJournalNumber || 'N/A'}</td>
                       <td className="p-3 text-center">
                         <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
@@ -1305,7 +1305,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                       <th className="p-2 text-start w-48">{isAr ? 'الصنف' : 'Item'}</th>
                       <th className="p-2 text-start w-28">{isAr ? 'الوحدة' : 'Unit'}</th>
                       <th className="p-2 text-center w-20">{isAr ? 'الكمية' : 'Qty'}</th>
-                      <th className="p-2 text-end w-24">{isAr ? 'السعر (ر.س)' : 'Price'}</th>
+                      <th className="p-2 text-end w-24">{isAr ? 'السعر (﷼)' : 'Price'}</th>
                       <th className="p-2 text-center w-20">{isAr ? 'خصم %' : 'Disc %'}</th>
                       <th className="p-2 text-end w-24">{isAr ? 'الخاضع' : 'Taxable'}</th>
                       <th className="p-2 text-end w-24">{isAr ? 'الضريبة 15%' : 'VAT'}</th>
@@ -1450,22 +1450,22 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                 <div className="text-end space-y-1 w-full sm:w-64">
                   <div className="flex justify-between text-slate-600">
                     <span>{isAr ? 'الإجمالي قبل الضريبة:' : 'Subtotal:'}</span>
-                    <span className="font-mono">{calculatedNewInvoiceTotals.subtotalSar.toFixed(2)} ر.س</span>
+                    <span className="font-mono">{calculatedNewInvoiceTotals.subtotalSar.toFixed(2)} ﷼</span>
                   </div>
                   {calculatedNewInvoiceTotals.discountTotalSar > 0 && (
                     <div className="flex justify-between text-amber-700">
                       <span>{isAr ? 'إجمالي الخصم:' : 'Discount:'}</span>
-                      <span className="font-mono">-{calculatedNewInvoiceTotals.discountTotalSar.toFixed(2)} ر.س</span>
+                      <span className="font-mono">-{calculatedNewInvoiceTotals.discountTotalSar.toFixed(2)} ﷼</span>
                     </div>
                   )}
                   <div className="flex justify-between text-emerald-800 font-semibold">
                     <span>{isAr ? 'ضريبة القيمة المضافة 15%:' : 'VAT 15%:'}</span>
-                    <span className="font-mono">{calculatedNewInvoiceTotals.taxTotalSar.toFixed(2)} ر.س</span>
+                    <span className="font-mono">{calculatedNewInvoiceTotals.taxTotalSar.toFixed(2)} ﷼</span>
                   </div>
                   <div className="flex justify-between text-sm font-bold text-slate-900 border-t border-slate-300 pt-1">
                     <span>{isAr ? 'المجموع النهائي:' : 'Grand Total:'}</span>
                     <span className="font-mono text-emerald-950 font-extrabold text-base">
-                      {calculatedNewInvoiceTotals.totalAmountSar.toFixed(2)} ر.س
+                      {calculatedNewInvoiceTotals.totalAmountSar.toFixed(2)} ﷼
                     </span>
                   </div>
                 </div>
@@ -1584,7 +1584,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                       <div>
                         <p className="font-semibold text-slate-900">{line.nameAr}</p>
                         <span className="text-[10px] text-slate-500 font-mono">
-                          السعر: {line.unitPriceSar} ر.س | الكمية بالفاتورة: {line.maxQty}
+                          السعر: {line.unitPriceSar} ﷼ | الكمية بالفاتورة: {line.maxQty}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
@@ -1706,7 +1706,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                     <tr>
                       <th className="p-2 text-start">{isAr ? 'الصنف' : 'Item'}</th>
                       <th className="p-2 text-center w-24">{isAr ? 'الكمية' : 'Qty'}</th>
-                      <th className="p-2 text-end w-28">{isAr ? 'السعر (ر.س)' : 'Price'}</th>
+                      <th className="p-2 text-end w-28">{isAr ? 'السعر (﷼)' : 'Price'}</th>
                       <th className="p-2 text-center w-20">{isAr ? 'خصم %' : 'Disc %'}</th>
                     </tr>
                   </thead>

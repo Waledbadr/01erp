@@ -99,15 +99,15 @@ export const DocumentPreviewFrame: React.FC<DocumentPreviewFrameProps> = ({
         <div className="border-t border-b-2 border-slate-900 py-2 my-2 space-y-1 text-[11px]">
           <div className="flex justify-between text-slate-600">
             <span>الخاضع للضريبة:</span>
-            <span>{data.totals.taxableAmountSar.toFixed(2)} ر.س</span>
+            <span>{data.totals.taxableAmountSar.toFixed(2)} ﷼</span>
           </div>
           <div className="flex justify-between text-slate-600">
             <span>ضريبة القيمة المضافة 15%:</span>
-            <span>{data.totals.vatAmountSar.toFixed(2)} ر.س</span>
+            <span>{data.totals.vatAmountSar.toFixed(2)} ﷼</span>
           </div>
           <div className="flex justify-between font-black text-sm pt-1 border-t border-slate-400">
             <span>الإجمالي المستحق:</span>
-            <span>{data.totals.totalAmountSar.toFixed(2)} ر.س</span>
+            <span>{data.totals.totalAmountSar.toFixed(2)} ﷼</span>
           </div>
         </div>
 
@@ -333,17 +333,17 @@ export const DocumentPreviewFrame: React.FC<DocumentPreviewFrameProps> = ({
         <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 space-y-2.5 text-xs">
           <div className="flex justify-between text-slate-600">
             <span>المجموع الخاضع للضريبة:</span>
-            <span className="font-mono font-semibold text-slate-800">{data.totals.taxableAmountSar.toFixed(2)} ر.س</span>
+            <span className="font-mono font-semibold text-slate-800">{data.totals.taxableAmountSar.toFixed(2)} ﷼</span>
           </div>
           {data.totals.discountTotalSar > 0 && (
             <div className="flex justify-between text-slate-600">
               <span>إجمالي الخصم التجاري:</span>
-              <span className="font-mono text-emerald-700">-{data.totals.discountTotalSar.toFixed(2)} ر.س</span>
+              <span className="font-mono text-emerald-700">-{data.totals.discountTotalSar.toFixed(2)} ﷼</span>
             </div>
           )}
           <div className="flex justify-between text-slate-600">
             <span>ضريبة القيمة المضافة (15%):</span>
-            <span className="font-mono font-semibold text-slate-800">{data.totals.vatAmountSar.toFixed(2)} ر.س</span>
+            <span className="font-mono font-semibold text-slate-800">{data.totals.vatAmountSar.toFixed(2)} ﷼</span>
           </div>
 
           <div
@@ -351,13 +351,13 @@ export const DocumentPreviewFrame: React.FC<DocumentPreviewFrameProps> = ({
             style={{ backgroundColor: colors.primary }}
           >
             <span>الإجمالي المستحق:</span>
-            <span className="font-mono text-base">{data.totals.totalAmountSar.toFixed(2)} ر.س</span>
+            <span className="font-mono text-base">{data.totals.totalAmountSar.toFixed(2)} ﷼</span>
           </div>
 
           {data.totals.balanceDueSar !== undefined && (
             <div className="flex justify-between pt-1 text-slate-700 font-bold">
               <span>الرصيد المتبقي للدفع:</span>
-              <span className="font-mono text-rose-700">{data.totals.balanceDueSar.toFixed(2)} ر.س</span>
+              <span className="font-mono text-rose-700">{data.totals.balanceDueSar.toFixed(2)} ﷼</span>
             </div>
           )}
         </div>

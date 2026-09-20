@@ -323,7 +323,7 @@ export const DomainAuditTools: React.FC<DomainAuditToolsProps> = ({ lang }) => {
                 </div>
                 <p>{isAr ? glValidation.errorAr : glValidation.error}</p>
                 <div className="mt-1 font-mono text-[11px] text-rose-700">
-                  {isAr ? `الفارق غير المتوازن: ${glValidation.difference} ر.س` : `Discrepancy: ${glValidation.difference} SAR`}
+                  {isAr ? `الفارق غير المتوازن: ${glValidation.difference} ﷼` : `Discrepancy: ${glValidation.difference} SAR`}
                 </div>
               </div>
             </div>
@@ -367,7 +367,7 @@ export const DomainAuditTools: React.FC<DomainAuditToolsProps> = ({ lang }) => {
             </div>
 
             <div className="space-y-1">
-              <label className="font-medium text-stone-700">{isAr ? 'التكلفة الحالية (ر.س/حبة)' : 'Current WAC (SAR)'}</label>
+              <label className="font-medium text-stone-700">{isAr ? 'التكلفة الحالية (﷼/حبة)' : 'Current WAC (SAR)'}</label>
               <input
                 type="number"
                 step="0.01"
@@ -388,7 +388,7 @@ export const DomainAuditTools: React.FC<DomainAuditToolsProps> = ({ lang }) => {
             </div>
 
             <div className="space-y-1">
-              <label className="font-medium text-stone-700">{isAr ? 'سعر الوحدة الواردة بعد الإنزال (ر.س)' : 'Effective Unit Cost (SAR)'}</label>
+              <label className="font-medium text-stone-700">{isAr ? 'سعر الوحدة الواردة بعد الإنزال (﷼)' : 'Effective Unit Cost (SAR)'}</label>
               <input
                 type="number"
                 step="0.01"

@@ -1429,7 +1429,7 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
                       <tr>
                         <th className="py-2.5 px-3 text-start">{isAr ? 'الصنف' : 'Item'}</th>
                         <th className="py-2.5 px-3 text-center">{isAr ? 'الكمية' : 'Qty'}</th>
-                        <th className="py-2.5 px-3 text-end">{isAr ? 'سعر الشراء (ر.س)' : 'Unit Cost (SAR)'}</th>
+                        <th className="py-2.5 px-3 text-end">{isAr ? 'سعر الشراء (﷼)' : 'Unit Cost (SAR)'}</th>
                         <th className="py-2.5 px-3 text-end">{isAr ? 'خصم %' : 'Disc %'}</th>
                         <th className="py-2.5 px-3 text-end">{isAr ? 'الضريبة 15%' : 'VAT 15%'}</th>
                         <th className="py-2.5 px-3 text-end">{isAr ? 'المجموع' : 'Total'}</th>
@@ -1844,7 +1844,7 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {isAr ? 'مبلغ الصرف (ر.س) *' : 'Amount (SAR) *'}
+                  {isAr ? 'مبلغ الصرف (﷼) *' : 'Amount (SAR) *'}
                 </label>
                 <input
                   type="number"
