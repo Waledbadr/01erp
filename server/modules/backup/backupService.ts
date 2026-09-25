@@ -12,6 +12,7 @@ import {
 import { getFixedAssetsService, setFixedAssetsForTenant } from '../assets/assetService.js';
 import { encryptAesGcm, decryptAesGcm, EncryptedArtifact } from '../../core/security.js';
 import { NotificationService } from '../notifications/notificationService.js';
+import { env } from '../../core/env.js';
 
 interface StoredBackupSnapshot {
   metadata: BackupSnapshotMetadata;
@@ -589,6 +590,7 @@ export function triggerScheduledBackupService(
  * Seed initial sample backup for demonstration
  */
 export function seedInitialBackupIfEmpty(tenantId: string, adminUserId: string, adminUserEmail: string) {
+  if (!env.SEED_DEMO_DATA) return; // no automatic backup on page open in real deployments
   const existing = tenantBackupsMap.get(tenantId);
   if (!existing || existing.length === 0) {
     const bkp = createBackupSnapshotService(

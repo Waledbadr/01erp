@@ -8,11 +8,15 @@ import {
   SharingQueueItem,
   SharingAttachment,
 } from './types.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
 
 // In-Memory stores for email settings, sending queue, and secure links
 const emailSettingsStore: Map<string, EmailSettings> = new Map();
+registerTenantState('documents.sharingService.emailSettingsStore', emailSettingsStore);
 const secureLinksStore: Map<string, SecureLink> = new Map(); // key: token
+registerTenantState('documents.sharingService.secureLinksStore', secureLinksStore);
 const sharingQueueStore: Map<string, SharingQueueItem[]> = new Map(); // key: tenantId
+registerTenantState('documents.sharingService.sharingQueueStore', sharingQueueStore);
 
 export class SharingService {
   // ==========================================

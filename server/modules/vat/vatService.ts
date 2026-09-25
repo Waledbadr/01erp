@@ -30,11 +30,14 @@ import {
   reconcileVatWithGl,
 } from '../../../src/lib/vat.js';
 import { roundHalalas } from '../../../src/lib/accounting.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
 
 // In-memory tenant tax stores
 const tenantTaxRatesMap = new Map<string, TaxRateDefinition[]>();
+registerTenantState('vat.vatService.tenantTaxRatesMap', tenantTaxRatesMap);
 const tenantTaxSettingsMap = new Map<string, TaxSettings>();
 
+registerTenantState('vat.vatService.tenantTaxSettingsMap', tenantTaxSettingsMap);
 /**
  * Ensures default tax rates and settings exist for a tenant.
  */

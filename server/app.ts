@@ -173,8 +173,19 @@ export function createExpressApp(): express.Express {
       stack: err.stack,
     });
 
-    res.status(500).json({
-      error: 'INTERNAL_SERVER_ERROR',
+    // Map the domain errors thrown by services to proper HTTP status codes; unexpected
+    // errors stay 500. (Validation problems used to be reported as 500.)
+    const name = err?.constructor?.name || err?.name;
+    const known: Record<string, [number, string]> = {
+      ValidationError: [400, 'VALIDATION_FAILED'],
+      NotFoundError: [404, 'NOT_FOUND'],
+      ConflictError: [409, 'CONFLICT'],
+      PermissionDeniedError: [403, 'FORBIDDEN'],
+      TenantIsolationViolationError: [403, 'FORBIDDEN'],
+    };
+    const [status, code] = known[name] || [500, 'INTERNAL_SERVER_ERROR'];
+    res.status(status).json({
+      error: code,
       message: err.message || 'An internal error occurred. Please contact the administrator.',
       correlationId,
       details: err.message,

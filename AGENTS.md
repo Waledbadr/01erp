@@ -30,4 +30,6 @@ This project is a production-grade Saudi ERP, Accounting, Inventory, and ZATCA P
   `src/__tests__/persistence_identity.test.ts`).
 - Do not write "certified", "zero gaps" or "production ready" in status files. Record what was verified,
   how, and what is still missing.
-- Current state: only identity data (users, companies, sessions) is persisted — see docs/development/tasks/TASK-006.md.
+- Current state: identity data in relational tables (TASK-006); all other company data in one versioned
+  snapshot per company (`tenant_state`, TASK-008). New module-level stores MUST be registered with
+  `registerTenantState` (server/db/tenantStateRegistry.ts) or they will not be saved.

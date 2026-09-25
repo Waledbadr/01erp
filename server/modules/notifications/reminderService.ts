@@ -16,13 +16,18 @@ import {
 } from './types.js';
 import { SharingService } from '../documents/sharingService.js';
 import { logger } from '../../core/logger.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
+import { env } from '../../core/env.js';
 
 // In-Memory stores keyed by tenantId
 const dueInvoicesStore: Map<string, DueInvoiceRecord[]> = new Map();
+registerTenantState('notifications.reminderService.dueInvoicesStore', dueInvoicesStore);
 const templatesStore: Map<string, ReminderTemplate[]> = new Map();
+registerTenantState('notifications.reminderService.templatesStore', templatesStore);
 const communicationLogsStore: Map<string, CommunicationLog[]> = new Map();
 
 // Default cooldown window for duplicate-send protection (24 hours in ms)
+registerTenantState('notifications.reminderService.communicationLogsStore', communicationLogsStore);
 const DUPLICATE_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 export class ReminderService {
@@ -551,6 +556,7 @@ export class ReminderService {
   }
 
   private static ensureSeedInvoices(tenantId: string): void {
+    if (!env.SEED_DEMO_DATA) return; // sample due invoices are demo data only
     if (dueInvoicesStore.has(tenantId) && (dueInvoicesStore.get(tenantId)?.length || 0) > 0) {
       return;
     }
@@ -663,6 +669,7 @@ export class ReminderService {
   }
 
   private static ensureSeedLogs(tenantId: string): void {
+    if (!env.SEED_DEMO_DATA) return; // sample communication logs are demo data only
     if (communicationLogsStore.has(tenantId) && (communicationLogsStore.get(tenantId)?.length || 0) > 0) {
       return;
     }

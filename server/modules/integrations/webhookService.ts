@@ -14,13 +14,17 @@ import {
   WebhookDeliveryStatus,
 } from './types.js';
 import { logger } from '../../core/logger.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
 
 // In-memory tenant-isolated stores
 const webhookEndpointsByTenant = new Map<string, WebhookEndpoint[]>();
+registerTenantState('integrations.webhookService.webhookEndpointsByTenant', webhookEndpointsByTenant);
 const webhookOutboxByTenant = new Map<string, WebhookOutboxEvent[]>();
+registerTenantState('integrations.webhookService.webhookOutboxByTenant', webhookOutboxByTenant);
 const webhookDeliveriesByTenant = new Map<string, WebhookDelivery[]>();
 
 // Exponential backoff retry delays in milliseconds (Attempts 1 to 8)
+registerTenantState('integrations.webhookService.webhookDeliveriesByTenant', webhookDeliveriesByTenant);
 export const RETRY_BACKOFF_DELAYS_MS = [
   1000,    // Attempt 1 -> 2: 1 second
   2000,    // Attempt 2 -> 3: 2 seconds

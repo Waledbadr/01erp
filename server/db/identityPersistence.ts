@@ -25,6 +25,7 @@ import { env } from '../core/env.js';
 import { logger } from '../core/logger.js';
 import { getDbPool } from './client.js';
 import { applyMigrations } from './migrations.js';
+import { acquireTenantLock, commitTenantLock, rollbackTenantLock, saveNewTenants, type TenantLock } from './tenantStatePersistence.js';
 import {
   centralStore,
   type CompanyTenant,
@@ -571,6 +572,8 @@ export async function identityPersistenceMiddleware(req: Request, res: Response,
   if (!path.startsWith('/api') || /\/health\//.test(path)) return next();
 
   const pool = getDbPool();
+  let tenantLock: TenantLock | null = null;
+  const tenantsBefore = new Set(store.tenants.keys());
   try {
     await ensureIdentityPersistenceReady();
     if (!pool) throw new Error('PostgreSQL pool unavailable');
@@ -598,7 +601,14 @@ export async function identityPersistenceMiddleware(req: Request, res: Response,
     if (req.method === 'POST' && TENANT_CREATING_ROUTES.test(path)) {
       res.locals.reservedTenantCode = await reserveTenantCode();
     }
+
+    // Company data: lock the signed-in company's snapshot and make sure memory is current.
+    const sessionTenant = token ? store.sessions.get(token)?.tenantId : undefined;
+    if (sessionTenant && known.has(`tenant:${sessionTenant}`) && !ephemeral.has(`tenant:${sessionTenant}`)) {
+      tenantLock = await acquireTenantLock(pool, sessionTenant);
+    }
   } catch (err) {
+    if (tenantLock) await rollbackTenantLock(tenantLock);
     logger.error('Identity persistence: load failed', { error: err instanceof Error ? err.message : String(err), path });
     return res.status(503).json({
       error: 'DATABASE_UNAVAILABLE',
@@ -606,16 +616,32 @@ export async function identityPersistenceMiddleware(req: Request, res: Response,
     });
   }
 
+  // Identity rows first (new companies need their tenants row), then company data.
+  const saveAll = async () => {
+    await flushIdentityChanges();
+    const created = [...store.tenants.keys()].filter(
+      (id) => !tenantsBefore.has(id) && known.has(`tenant:${id}`) && !ephemeral.has(`tenant:${id}`),
+    );
+    if (created.length) await saveNewTenants(pool!, created);
+    if (tenantLock) {
+      // A failed request (4xx/5xx) must not leave half-applied company data behind: discard its
+      // changes; the next request reloads this company's data from the database.
+      if (res.statusCode >= 400) await rollbackTenantLock(tenantLock);
+      else await commitTenantLock(tenantLock);
+    }
+  };
+
   // Save before the response leaves the server, so a 2xx means the data is durable.
   const originalJson = res.json.bind(res);
   let flushed = false;
   res.json = ((payload: unknown) => {
     if (flushed) return originalJson(payload);
     flushed = true;
-    flushIdentityChanges()
+    saveAll()
       .then(() => originalJson(payload))
-      .catch((err) => {
-        logger.error('Identity persistence: save failed', { error: err instanceof Error ? err.message : String(err), path });
+      .catch(async (err) => {
+        logger.error('Persistence: save failed', { error: err instanceof Error ? err.message : String(err), path });
+        if (tenantLock) await rollbackTenantLock(tenantLock);
         res.status(500);
         originalJson({ error: 'PERSISTENCE_FAILED', message: 'تعذر حفظ البيانات في قاعدة البيانات. لم يتم تنفيذ العملية.' });
       });
@@ -626,9 +652,17 @@ export async function identityPersistenceMiddleware(req: Request, res: Response,
   res.on('finish', () => {
     if (flushed) return;
     flushed = true;
-    flushIdentityChanges().catch((err) =>
-      logger.error('Identity persistence: post-response save failed', { error: err instanceof Error ? err.message : String(err), path }),
-    );
+    saveAll().catch(async (err) => {
+      logger.error('Persistence: post-response save failed', { error: err instanceof Error ? err.message : String(err), path });
+      if (tenantLock) await rollbackTenantLock(tenantLock);
+    });
+  });
+  // Client went away before a response: never keep the company lock.
+  res.on('close', () => {
+    if (!flushed && tenantLock) {
+      flushed = true;
+      rollbackTenantLock(tenantLock).catch(() => undefined);
+    }
   });
 
   next();

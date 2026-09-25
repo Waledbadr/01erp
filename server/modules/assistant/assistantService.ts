@@ -28,11 +28,14 @@ import { ReportService } from '../reports/reportService.js';
 import { postSalesInvoiceService } from '../sales/salesService.js';
 import { postPurchaseBillService, createPurchaseOrderService } from '../purchasing/purchasingService.js';
 import { ReminderService } from '../notifications/reminderService.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
 
 // In-memory tenant conversation and action store
 export const tenantConversationsStore = new Map<string, Map<string, AssistantConversation>>();
+registerTenantState('assistant.assistantService.tenantConversationsStore', tenantConversationsStore);
 export const tenantActionsStore = new Map<string, Map<string, ActionSuggestion>>();
 
+registerTenantState('assistant.assistantService.tenantActionsStore', tenantActionsStore);
 /**
  * Get or initialize conversation map for tenant
  */

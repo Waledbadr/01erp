@@ -9,6 +9,7 @@ import { ApiKey, CreateApiKeyInput, CreateApiKeyResult, SYSTEM_API_SCOPES } from
 import { centralStore, TenantContext } from '../../core/tenantGuard.js';
 import { recordAuditLogService } from '../audit/auditService.js';
 import { logger } from '../../core/logger.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
 
 // Central in-memory store for API keys partitioned by keyHash & tenantId
 const apiKeysByHash = new Map<string, ApiKey>();
@@ -367,3 +368,14 @@ export function clearApiKeysStoreForTest(): void {
   apiKeysByTenant.clear();
   rateLimitBuckets.clear();
 }
+
+// Company data persistence: keys are saved per tenant; the hash index is rebuilt after a load
+// so both maps keep pointing at the same objects.
+registerTenantState('integrations.apiKeysByTenant', apiKeysByTenant, {
+  afterLoad: (tenantId) => {
+    for (const [hash, key] of [...apiKeysByHash.entries()]) {
+      if ((key as { tenantId?: string }).tenantId === tenantId) apiKeysByHash.delete(hash);
+    }
+    for (const key of apiKeysByTenant.get(tenantId) || []) apiKeysByHash.set(key.keyHash, key);
+  },
+});

@@ -162,6 +162,28 @@ export const MIGRATIONS: Migration[] = [
       END $$;
     `,
   },
+  {
+    // TASK-008: one versioned snapshot of each company's operational data.
+    version: '005_tenant_state',
+    sql: `
+      CREATE TABLE IF NOT EXISTS tenant_state (
+        tenant_id   TEXT PRIMARY KEY REFERENCES tenants(id) ON DELETE CASCADE,
+        version     BIGINT NOT NULL DEFAULT 0,
+        data        JSONB,
+        updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      ALTER TABLE tenant_state ENABLE ROW LEVEL SECURITY;
+      DO $$
+      DECLARE r TEXT;
+      BEGIN
+        FOREACH r IN ARRAY ARRAY['anon','authenticated'] LOOP
+          IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
+            EXECUTE format('REVOKE ALL ON TABLE tenant_state FROM %I', r);
+          END IF;
+        END LOOP;
+      END $$;
+    `,
+  },
 ];
 
 const MIGRATION_LOCK_KEY = 482_917_001; // arbitrary, stable advisory-lock id
