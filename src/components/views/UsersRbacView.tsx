@@ -215,13 +215,12 @@ export const UsersRbacView: React.FC<{ onNavigate: (route: string) => void }> = 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       <PageHeader
-        title={isAr ? 'إدارة المستخدمين والأمان ومصفوفة الصلاحيات (RBAC)' : 'Users, Security & RBAC Matrix'}
+        title={isAr ? 'المستخدمون والصلاحيات' : 'Users & Roles'}
         subtitle={
           isAr
             ? 'فصل الصلاحيات، حماية بيانات التكاليف والهوامش، وإدارة الجلسات وسجلات التدقيق'
             : 'Separation of duties, cost/margin sensitive data protection, sessions and audit control'
         }
-        badge={<Badge variant="success">Phase 01 Active</Badge>}
         actions={
           <div className="flex gap-2">
             <Button
@@ -279,7 +278,7 @@ export const UsersRbacView: React.FC<{ onNavigate: (route: string) => void }> = 
           }`}
         >
           <EyeOff className="w-4 h-4" />
-          <span>{isAr ? 'فحص حجب التكاليف والهوامش (Rule C)' : 'Cost Scrubber Live Tester'}</span>
+          <span>{isAr ? 'فحص حجب التكاليف والهوامش' : 'Cost Scrubber Live Tester'}</span>
         </button>
 
         <button

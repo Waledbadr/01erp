@@ -342,7 +342,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({ isOpen, on
                   <li>{isRtl ? 'ابحث برقم الفاتورة مثل INV-2025-001' : 'Search by invoice number like INV-2025-001'}</li>
                   <li>{isRtl ? 'ابحث بالرقم الضريبي المكون من 15 رقماً' : 'Search by 15-digit Saudi VAT ID'}</li>
                   <li>{isRtl ? 'ابحث برمز الباركود للصنف أو كود الـ SKU' : 'Search by item barcode or SKU code'}</li>
-                  <li>{isRtl ? 'التكلفة وهوامش الربح محمية ولا تظهر إلا للمصرح لهم' : 'Costs and margins strictly protected by RBAC (Rule C)'}</li>
+                  <li>{isRtl ? 'التكلفة وهوامش الربح محمية ولا تظهر إلا للمصرح لهم' : 'Costs and margins strictly protected by RBAC'}</li>
                 </ul>
               </div>
             </div>

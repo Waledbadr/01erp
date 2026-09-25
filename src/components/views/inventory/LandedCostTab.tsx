@@ -209,7 +209,7 @@ export const LandedCostTab: React.FC<LandedCostTabProps> = ({ items, getAuthHead
           <div className="flex items-center gap-2">
             <Ship className="w-5 h-5 text-indigo-600" />
             <h3 className="font-semibold text-neutral-900 text-sm">
-              {isAr ? 'إدارة وتحميل تكاليف الاستيراد والشحن (Rule I6)' : 'Landed Cost Allocation Engine'}
+              {isAr ? 'إدارة وتحميل تكاليف الاستيراد والشحن' : 'Landed Cost Allocation Engine'}
             </h3>
           </div>
           <p className="text-xs text-neutral-500 mt-1">

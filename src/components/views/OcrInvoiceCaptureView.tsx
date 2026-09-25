@@ -201,7 +201,7 @@ export const OcrInvoiceCaptureView: React.FC<OcrInvoiceCaptureViewProps> = ({ on
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900 font-display">
-                {isAr ? 'التقاط فواتير الموردين بالذكاء الاصطناعي (OCR)' : 'OCR Supplier Invoice Capture'}
+                {isAr ? 'قراءة فواتير الموردين' : 'Scan Supplier Bills'}
               </h1>
               <p className="text-sm text-slate-500 mt-0.5">
                 {isAr

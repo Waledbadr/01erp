@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { I18nProvider, useI18n } from './i18n/context.js';
 import { ToastProvider } from './components/ui/Toast.js';
 import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { AppLayout } from './components/layout/AppLayout.js';
-import { DashboardView } from './components/views/DashboardView.js';
+import { HomeDashboardView } from './components/views/HomeDashboardView.js';
 import { DesignSystemView } from './components/views/DesignSystemView.js';
 import { DocsView } from './components/views/DocsView.js';
 import { LoginView, RegisterView, ForgotPasswordView } from './components/views/AuthViews.js';
@@ -33,18 +33,71 @@ import { NotFoundView, MaintenanceView, ModuleShellView } from './components/vie
 import { DomainAuditTools } from './components/DomainAuditTools.js';
 import { SecurityAuditBackupView } from './components/views/SecurityAuditBackupView.js';
 import { PhaseRoadmapView } from './components/views/PhaseRoadmapView.js';
-import { PhaseRoadmapModal } from './components/PhaseRoadmapModal.js';
 import { DocViewerModal } from './components/DocViewerModal.js';
 import { SYSTEM_DOCS, SystemDoc } from './lib/docsData.js';
-import { Building2, Languages, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Building2, Languages } from 'lucide-react';
+
+const SESSION_KEY = 'saudi_erp_session_token';
+const AUTH_ROUTES = new Set(['/login', '/signin', '/register', '/signup', '/forgot-password']);
+// Developer-only screens are reachable only in development builds.
+const IS_DEV_BUILD = Boolean((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV);
+const DEV_ROUTES = new Set(['/design-system', '/docs', '/documentation', '/audit-tools', '/roadmap', '/phases', '/maintenance']);
+
+function normalizeRoute(route: string): string {
+  const clean = (route || '/').split('?')[0].split('#')[0].toLowerCase().replace(/\/+$/, '');
+  return clean || '/';
+}
+
+function initialRoute(): string {
+  if (typeof window === 'undefined') return '/login';
+  const path = normalizeRoute(window.location.pathname);
+  const hasSession = !!localStorage.getItem(SESSION_KEY);
+  if (!hasSession) return AUTH_ROUTES.has(path) ? path : '/login';
+  return AUTH_ROUTES.has(path) ? '/' : path;
+}
 
 function AppContent() {
   const { language, toggleLanguage, isAr } = useI18n();
 
-  // Initialize at /login by default so the user is prompted to sign in or create an account
-  const [currentRoute, setCurrentRoute] = useState<string>('/login');
+  // The current page lives in the URL, so refresh, bookmarks and the back button work.
+  const [currentRoute, setRouteState] = useState<string>(initialRoute);
   const [selectedDoc, setSelectedDoc] = useState<SystemDoc | null>(null);
-  const [isRoadmapOpen, setIsRoadmapOpen] = useState<boolean>(false);
+
+  const setCurrentRoute = useCallback((route: string) => {
+    const next = normalizeRoute(route);
+    if (next === '/login' || next === '/signin') {
+      // Going to the login page means the session is over (logout, expired session).
+      if (!AUTH_ROUTES.has(normalizeRoute(window.location.pathname))) localStorage.removeItem(SESSION_KEY);
+    }
+    if (normalizeRoute(window.location.pathname) !== next) {
+      window.history.pushState({}, '', next === '/dashboard' ? '/' : next);
+    }
+    setRouteState(next === '/dashboard' ? '/' : next);
+    window.scrollTo?.(0, 0);
+  }, []);
+
+  useEffect(() => {
+    const onPop = () => setRouteState(initialRoute());
+    window.addEventListener('popstate', onPop);
+    // Keep the address bar in sync with the first screen shown.
+    const first = initialRoute();
+    if (normalizeRoute(window.location.pathname) !== first) window.history.replaceState({}, '', first);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  // Validate a stored session once; an expired or revoked token goes back to login.
+  useEffect(() => {
+    const token = localStorage.getItem(SESSION_KEY);
+    if (!token) return;
+    fetch('/api/v1/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => {
+        if (res.status === 401) {
+          localStorage.removeItem(SESSION_KEY);
+          setCurrentRoute('/login');
+        }
+      })
+      .catch(() => undefined);
+  }, [setCurrentRoute]);
 
   // Check for public secure link route
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
@@ -62,8 +115,8 @@ function AppContent() {
     }
   };
 
-  const cleanRoute = (currentRoute || '/').split('?')[0].split('#')[0].toLowerCase();
-  const isAuthRoute = cleanRoute === '/login' || cleanRoute === '/signin' || cleanRoute === '/register' || cleanRoute === '/signup' || cleanRoute === '/forgot-password';
+  const cleanRoute = normalizeRoute(currentRoute);
+  const isAuthRoute = AUTH_ROUTES.has(cleanRoute);
 
   if (isAuthRoute) {
     return (
@@ -78,14 +131,11 @@ function AppContent() {
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-base font-black text-slate-900 tracking-tight">
-                    {isAr ? 'منصة سحاب إي آر بي' : 'Sahab ERP Cloud'}
+                    {isAr ? 'سحاب ERP' : 'Sahab ERP'}
                   </h1>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">
-                    {isAr ? 'المملكة العربية السعودية 🇸🇦' : 'Saudi Arabia 🇸🇦'}
-                  </span>
                 </div>
                 <p className="text-[11px] text-slate-500">
-                  {isAr ? 'نظام الحسابات والمخزون والفوترة الإلكترونية (المرحلة الثانية ZATCA)' : 'ERP, Inventory & ZATCA Phase 2 E-Invoicing Cloud'}
+                  {isAr ? 'المحاسبة والمخزون والفوترة الإلكترونية' : 'Accounting, inventory and e-invoicing'}
                 </p>
               </div>
             </div>
@@ -112,42 +162,23 @@ function AppContent() {
         </main>
 
         {/* Auth Footer */}
-        <footer className="w-full bg-white border-t border-slate-200 py-4 px-4 text-center">
-          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-700" />
-              <span>{isAr ? 'نظام مشفر ومطابق لمتطلبات هيئة الزكاة والضريبة والجمارك (ZATCA)' : 'Compliant with ZATCA Phase 2 & Saudi Commercial Regulations'}</span>
-            </div>
-            <div className="flex items-center gap-4 text-[11px]">
-              <span className="flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                {isAr ? 'تشفير تام 256-bit' : '256-bit TLS Encryption'}
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                {isAr ? 'عزل كامل لبيانات المنشأة (Multi-Tenant Isolation)' : 'Strict Multi-Tenant Isolation'}
-              </span>
-            </div>
-          </div>
+        <footer className="w-full bg-white border-t border-slate-200 py-4 px-4 text-center text-xs text-slate-400">
+          © {new Date().getFullYear()} {isAr ? 'سحاب ERP' : 'Sahab ERP'}
         </footer>
       </div>
     );
   }
 
   const renderCurrentView = () => {
+    if (DEV_ROUTES.has(cleanRoute) && !IS_DEV_BUILD) {
+      return <NotFoundView onNavigate={setCurrentRoute} />;
+    }
     switch (cleanRoute) {
       case '/':
       case '/dashboard':
       case '/home':
       case '/overview':
-        return (
-          <DashboardView
-            onNavigate={setCurrentRoute}
-            onOpenDoc={handleOpenDocById}
-            onOpenRoadmap={() => setIsRoadmapOpen(true)}
-          />
-        );
+        return <HomeDashboardView onNavigate={setCurrentRoute} />;
       case '/design-system':
         return <DesignSystemView />;
       case '/company-wizard':
@@ -303,13 +334,6 @@ function AppContent() {
           lang={language}
         />
       )}
-
-      {/* Phase Roadmap Modal */}
-      <PhaseRoadmapModal
-        isOpen={isRoadmapOpen}
-        onClose={() => setIsRoadmapOpen(false)}
-        lang={language}
-      />
     </AppLayout>
   );
 }

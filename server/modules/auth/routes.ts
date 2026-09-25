@@ -16,6 +16,7 @@ import {
 import { centralStore, User, UserSession } from '../../core/tenantGuard.js';
 import { requireAuth } from '../../core/authMiddleware.js';
 import { logger } from '../../core/logger.js';
+import { env } from '../../core/env.js';
 
 export const authRouter = Router();
 
@@ -134,6 +135,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
       crNumber: sanitizedCr,
       unifiedNumber: unifiedNumber?.trim(),
       adminUserId: userId,
+      code: res.locals.reservedTenantCode, // set by identityPersistenceMiddleware when a database is used
     });
 
     // 7. Create Session
@@ -642,6 +644,7 @@ authRouter.post('/create-company', requireAuth, (req: Request, res: Response) =>
       phone: phone?.trim() || '',
       email: email?.trim() || ctx.userEmail,
       adminUserId: ctx.userId,
+      code: res.locals.reservedTenantCode, // set by identityPersistenceMiddleware when a database is used
     });
 
     // Switch current session active tenant
@@ -902,6 +905,14 @@ authRouter.get('/login-history', requireAuth, (req: Request, res: Response) => {
   const ctx = req.tenantContext!;
   const history = centralStore.loginHistory.filter((h) => h.userId === ctx.userId || h.email === ctx.userEmail).slice(0, 50);
   return res.json({ history });
+});
+
+// Public, non-secret settings the login/register pages need.
+authRouter.get('/public-config', (_req: Request, res: Response) => {
+  return res.json({
+    demoMode: env.SEED_DEMO_DATA,
+    turnstileConfigured: Boolean(process.env.TURNSTILE_SECRET_KEY),
+  });
 });
 
 authRouter.get('/turnstile-status', (req: Request, res: Response) => {

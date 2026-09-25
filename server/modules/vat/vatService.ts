@@ -546,17 +546,21 @@ export function getVatReconciliationService(
   let glOutputVatCreditCents = 0n;
   let glInputVatDebitCents = 0n;
   let glInputVatCreditCents = 0n;
+  // Journal lines from different modules store cents as bigint, number or string;
+  // convert explicitly (mixing bigint and number throws a TypeError).
+  const cents = (v: unknown): bigint =>
+    typeof v === 'bigint' ? v : BigInt(Math.round(Number(v ?? 0) || 0));
 
   for (const j of journals) {
     if (j.status === 'POSTED' && j.entryDate <= cutoff) {
       for (const l of j.lines) {
         if (l.accountCode === '20301' || l.accountCode === '210201' || l.accountNameAr?.includes('مخرجات') || l.accountNameEn?.toLowerCase().includes('output vat')) {
-          glOutputVatDebitCents += l.debitCents;
-          glOutputVatCreditCents += l.creditCents;
+          glOutputVatDebitCents += cents(l.debitCents);
+          glOutputVatCreditCents += cents(l.creditCents);
         }
         if (l.accountCode === '10301' || l.accountCode === '210202' || l.accountNameAr?.includes('مدخلات') || l.accountNameEn?.toLowerCase().includes('input vat')) {
-          glInputVatDebitCents += l.debitCents;
-          glInputVatCreditCents += l.creditCents;
+          glInputVatDebitCents += cents(l.debitCents);
+          glInputVatCreditCents += cents(l.creditCents);
         }
       }
     }

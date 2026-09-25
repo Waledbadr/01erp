@@ -334,11 +334,11 @@ export const ReportsCenterView: React.FC = () => {
             </div>
             <div>
               <h1 className="text-xl font-bold text-slate-900">
-                {isAr ? 'مركز التقارير المعتمد (24 تقريراً)' : 'Authoritative Reports Center'}
+                {isAr ? 'التقارير' : 'Reports'}
               </h1>
               <p className="text-sm text-slate-500">
                 {isAr
-                  ? 'تقارير مالية، ذمم مدينة ودائنة، مبيعات، مخزون وضريبة متوافقة مع القيد الذهبي (G1-G4)'
+                  ? 'تقارير مالية، ذمم مدينة ودائنة، مبيعات، مخزون وضريبة متوافقة مع القيد الذهبي'
                   : 'Financial, AR/AP, Sales, Inventory, and VAT reports linked to source ledgers'}
               </p>
             </div>

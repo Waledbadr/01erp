@@ -212,7 +212,20 @@ export const AccountingMasterView: React.FC<{ onNavigate?: (route: string) => vo
       const jRes = await fetch('/api/v1/accounting/journals', { headers });
       if (jRes.ok) {
         const data = await jRes.json();
-        setJournals(data.journals || []);
+        // The API returns entryNumber / entryDate / descriptionAr|En / sourceDocument*;
+        // normalise to the fields this screen uses so every journal renders and searches.
+        const normalised: JournalRecord[] = (data.journals || []).map((j: any) => ({
+          ...j,
+          number: j.number ?? j.entryNumber ?? '',
+          date: j.date ?? j.entryDate ?? '',
+          description: j.description ?? (isAr ? j.descriptionAr : j.descriptionEn) ?? j.descriptionAr ?? j.descriptionEn ?? '',
+          descriptionAr: j.descriptionAr ?? '',
+          descriptionEn: j.descriptionEn ?? '',
+          sourceType: j.sourceType ?? j.sourceDocumentType ?? '',
+          sourceKey: j.sourceKey ?? j.sourceDocumentNumber ?? '',
+          lines: Array.isArray(j.lines) ? j.lines : [],
+        }));
+        setJournals(normalised);
       }
 
       // 3. Fiscal Years & Periods
@@ -252,8 +265,8 @@ export const AccountingMasterView: React.FC<{ onNavigate?: (route: string) => vo
       const matchType = accountTypeFilter === 'ALL' || acc.type === accountTypeFilter;
       const matchSearch =
         acc.code.includes(accountSearch) ||
-        acc.nameAr.toLowerCase().includes(accountSearch.toLowerCase()) ||
-        acc.nameEn.toLowerCase().includes(accountSearch.toLowerCase());
+        (acc.nameAr || '').toLowerCase().includes(accountSearch.toLowerCase()) ||
+        (acc.nameEn || '').toLowerCase().includes(accountSearch.toLowerCase());
       return matchType && matchSearch;
     });
   }, [accounts, accountTypeFilter, accountSearch]);
@@ -506,16 +519,13 @@ export const AccountingMasterView: React.FC<{ onNavigate?: (route: string) => vo
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-lg sm:text-xl font-bold text-slate-900">
-                  {isAr ? 'المحاسبة العامة ودفتر الأستاذ (General Ledger)' : 'General Ledger & Double-Entry Engine'}
+                  {isAr ? 'الحسابات والقيود' : 'Accounts & Journals'}
                 </h1>
-                <Badge variant="success" size="sm">
-                  {isAr ? 'المرحلة 02: مكتملة' : 'Phase 02: Active'}
-                </Badge>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
                 {isAr
-                  ? 'محرك القيد المزدوج الثابت، شجرة الحسابات السعودية الموحدة، وميزان المراجعة الحي (القواعد G1-G8)'
-                  : 'Immutable double-entry posting engine, unified Saudi COA, and real-time trial balance (Rules G1-G8)'}
+                  ? 'محرك القيد المزدوج الثابت، شجرة الحسابات السعودية الموحدة، وميزان المراجعة الحي'
+                  : 'Immutable double-entry posting engine, unified Saudi COA, and real-time trial balance'}
               </p>
             </div>
           </div>
@@ -600,7 +610,7 @@ export const AccountingMasterView: React.FC<{ onNavigate?: (route: string) => vo
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs flex items-center justify-between">
           <div>
             <span className="text-xs font-medium text-slate-500 block mb-1">
-              {isAr ? 'حالة التوازن المحاسبي (Rule G1)' : 'Invariant Balance Status'}
+              {isAr ? 'حالة التوازن المحاسبي' : 'Invariant Balance Status'}
             </span>
             <div className="flex items-center gap-1.5 mt-1">
               {trialBalance?.isBalanced !== false ? (

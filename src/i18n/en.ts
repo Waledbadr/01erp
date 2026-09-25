@@ -1,8 +1,8 @@
 export const en = {
   common: {
-    appName: 'Saudi ERP & ZATCA Cloud Platform',
-    appShortName: 'Saudi ERP',
-    tagline: 'Enterprise Cloud Accounting, Inventory, and ZATCA Phase 2 E-Invoicing Platform',
+    appName: 'Sahab ERP',
+    appShortName: 'Sahab ERP',
+    tagline: 'Accounting, inventory and e-invoicing',
     search: 'Search...',
     filter: 'Filter',
     clearFilters: 'Clear Filters',

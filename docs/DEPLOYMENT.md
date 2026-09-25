@@ -68,3 +68,20 @@ Vercel reported `ERR_MODULE_NOT_FOUND` for `src/lib/accounting` imported by `src
 Run `npm run test:api-esm` before deployment. It transpiles the API and shared server libraries into separate JavaScript files in a disposable project cache directory, then launches native Node without a TypeScript loader. It checks startup, HTTP health (200), invalid registration (400), and synthetic registration (201). No production database or external service is used. The check also runs in CI.
 
 The extension fix must be deployed to Vercel before the live site changes. Local success does not claim a production redeployment. This fix does not change the existing in-memory registration storage.
+
+
+## Identity persistence (TASK-006, 2026-09-25)
+
+When `DATABASE_URL` (or `POSTGRES_URL*`) is set, users, companies, branches, memberships, sessions,
+invites, auth tokens and login history are stored in PostgreSQL. Tables are created automatically on
+the first API request; `npm run db:migrate` does the same explicitly and, when `PLATFORM_ADMIN_EMAIL`
+and `PLATFORM_ADMIN_PASSWORD` (>= 12 characters) are set, creates or updates the platform super admin.
+
+With a database the demo company and demo users (published password) are NOT seeded unless
+`SEED_DEMO_DATA=true`. `ERP_PERSISTENCE=off` forces in-memory mode.
+
+All other domain data is still in memory only and is lost on restart. Serverless hosting (Vercel) is
+therefore still unsuitable for real use until the remaining units are persisted.
+
+Before deploying: run `TEST_DATABASE_URL=<disposable db> npm run test:persistence`. The test DROPS the
+`public` schema of that database; never point it at real data.

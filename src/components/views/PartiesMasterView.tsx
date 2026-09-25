@@ -704,13 +704,12 @@ SUPP-2002,مؤسسة البحر الأحمر للخدمات اللوجستية,R
     <div className="space-y-6">
       {/* Top Header */}
       <PageHeader
-        title={isAr ? 'دليل العملاء والموردين ودفتر الأستاذ' : 'Customers & Suppliers Master Directory'}
+        title={isAr ? 'العملاء والموردون' : 'Customers & Suppliers'}
         subtitle={
           isAr
-            ? 'إدارة متكاملة للأطراف، الحسابات الفرعية التلقائية (10201/20101)، أرصدة دفتر الأستاذ الفورية (G4)، وفحص الائتمان الصارم'
-            : 'Enterprise Party Directory with automatic GL subaccounts (10201/20101), real-time ledger balances (G4), and strict credit enforcement'
+            ? 'إدارة متكاملة للأطراف، الحسابات الفرعية التلقائية (10201/20101)، أرصدة دفتر الأستاذ الفورية، وفحص الائتمان الصارم'
+            : 'Enterprise Party Directory with automatic GL subaccounts (10201/20101), real-time ledger balances, and strict credit enforcement'
         }
-        badge={<Badge variant="success">Phase 03 Certified</Badge>}
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={loadParties} startIcon={<RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />}>
@@ -804,7 +803,7 @@ SUPP-2002,مؤسسة البحر الأحمر للخدمات اللوجستية,R
                 {customers.reduce((acc, c) => acc + (c.ledgerBalanceSar || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
                 <span className="text-xs font-normal">SAR</span>
               </div>
-              <div className="text-xs text-emerald-600 font-medium mt-0.5">{isAr ? 'مشتقة من القيود المرحلة (G4)' : 'Strict posted journals (G4)'}</div>
+              <div className="text-xs text-emerald-600 font-medium mt-0.5">{isAr ? 'مشتقة من القيود المرحلة' : 'Strict posted journals'}</div>
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
@@ -879,7 +878,7 @@ SUPP-2002,مؤسسة البحر الأحمر للخدمات اللوجستية,R
                     <th className="py-3 px-4 text-start">{isAr ? 'الرقم الضريبي / السجل' : 'VAT / CR Number'}</th>
                     <th className="py-3 px-4 text-start">{isAr ? 'التصنيف والشروط' : 'Group & Terms'}</th>
                     <th className="py-3 px-4 text-start">{isAr ? 'الحد الائتماني' : 'Credit Limit'}</th>
-                    <th className="py-3 px-4 text-start">{isAr ? 'رصيد دفتر الأستاذ' : 'Ledger Balance (G4)'}</th>
+                    <th className="py-3 px-4 text-start">{isAr ? 'رصيد دفتر الأستاذ' : 'Ledger Balance'}</th>
                     <th className="py-3 px-4 text-start">{isAr ? 'الحالة' : 'Status'}</th>
                     <th className="py-3 px-4 text-end">{isAr ? 'إجراءات' : 'Actions'}</th>
                   </tr>
@@ -1032,7 +1031,7 @@ SUPP-2002,مؤسسة البحر الأحمر للخدمات اللوجستية,R
                 {suppliers.reduce((acc, s) => acc + (s.ledgerBalanceSar || 0), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{' '}
                 <span className="text-xs font-normal">SAR</span>
               </div>
-              <div className="text-xs text-blue-600 font-medium mt-0.5">{isAr ? 'مشتقة من فواتير المشتريات (G4)' : 'Strict posted vendor bills (G4)'}</div>
+              <div className="text-xs text-blue-600 font-medium mt-0.5">{isAr ? 'مشتقة من فواتير المشتريات' : 'Strict posted vendor bills'}</div>
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
@@ -1106,7 +1105,7 @@ SUPP-2002,مؤسسة البحر الأحمر للخدمات اللوجستية,R
                     <th className="py-3 px-4 text-start">{isAr ? 'الرقم الضريبي / السجل' : 'VAT / CR Number'}</th>
                     <th className="py-3 px-4 text-start">{isAr ? 'التصنيف والبنك' : 'Classification & Bank'}</th>
                     <th className="py-3 px-4 text-start">{isAr ? 'شروط السداد' : 'Payment Terms'}</th>
-                    <th className="py-3 px-4 text-start">{isAr ? 'المستحقات (دفتر الأستاذ)' : 'Payable Balance (G4)'}</th>
+                    <th className="py-3 px-4 text-start">{isAr ? 'المستحقات (دفتر الأستاذ)' : 'Payable Balance'}</th>
                     <th className="py-3 px-4 text-start">{isAr ? 'الحالة' : 'Status'}</th>
                     <th className="py-3 px-4 text-end">{isAr ? 'إجراءات' : 'Actions'}</th>
                   </tr>
@@ -2049,7 +2048,7 @@ SUPP-2002,مؤسسة البحر الأحمر للخدمات اللوجستية,R
               </div>
             </div>
             <div>
-              <span className="text-slate-500">{isAr ? 'الرصيد الدفتري الحالي (G4):' : 'Current Balance (G4):'} </span>
+              <span className="text-slate-500">{isAr ? 'الرصيد الدفتري الحالي:' : 'Current Balance:'} </span>
               <span className="font-mono font-bold text-emerald-700 text-sm">
                 {(selectedCustomer ? selectedCustomer.ledgerBalanceSar : selectedSupplier?.ledgerBalanceSar || 0).toLocaleString('en-US', {
                   minimumFractionDigits: 2,

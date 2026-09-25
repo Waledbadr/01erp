@@ -13,7 +13,7 @@ This project is a production-grade Saudi ERP, Accounting, Inventory, and ZATCA P
 
 ## Where Things Live
 - `docs/`: Master architectural and domain documentation (`PROJECT_SPEC.md`, `ARCHITECTURE.md`, `DECISIONS.md`, `ACCOUNTING_RULES.md`, `INVENTORY_RULES.md`, `VAT_ZATCA_RULES.md`, `SECURITY.md`, `API.md`, `TESTING.md`, `DEPLOYMENT.md`, `BACKUPS.md`, `USER_GUIDE_AR.md`, `USER_GUIDE_EN.md`).
-- `PHASE_STATUS.md`: Tracking progress and completion criteria for every phase.
+- `docs/development/`: build history — original phase prompts (`phases/`), `PHASE_STATUS.md`, task records (`tasks/`), demo accounts.
 - `src/`: Client-side React 19 source code.
 - `server.ts` / `server/`: Express backend API server and business engines.
 - `dist/`: Built client and server output for production.
@@ -22,3 +22,12 @@ This project is a production-grade Saudi ERP, Accounting, Inventory, and ZATCA P
 - **Lint / Typecheck**: `npm run lint`
 - **Build**: `npm run build`
 - **Dev**: `npm run dev`
+
+
+## Definition of done for data (added 2026-09-25)
+- No phase, module or feature is "complete" unless its data is stored in PostgreSQL, survives a hard
+  restart, and this is proven by an integration test against a real database (see
+  `src/__tests__/persistence_identity.test.ts`).
+- Do not write "certified", "zero gaps" or "production ready" in status files. Record what was verified,
+  how, and what is still missing.
+- Current state: only identity data (users, companies, sessions) is persisted — see docs/development/tasks/TASK-006.md.

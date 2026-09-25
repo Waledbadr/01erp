@@ -120,7 +120,7 @@ export const OpeningStockModal: React.FC<OpeningStockModalProps> = ({
               <p className="text-xs text-neutral-500">
                 {isAr
                   ? 'ترحيل أرصدة المخزون الافتتاحية مع توليد القيد المحاسبي في حقوق الملكية'
-                  : 'Double-entry opening balance into equity (Rule G1)'}
+                  : 'Double-entry opening balance into equity'}
               </p>
             </div>
           </div>

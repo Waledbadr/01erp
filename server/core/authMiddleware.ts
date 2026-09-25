@@ -235,31 +235,16 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction) 
   next();
 }
 
-// Fallback/standard tenant authenticator for modular routes
+// Tenant authenticator for modular routes.
+// SECURITY: this used to fabricate an OWNER (or, with `x-superadmin: true`, a SUPER_ADMIN)
+// context for ANY unauthenticated request, taking the tenant from the `x-tenant-id` header.
+// It now requires a real authenticated context (session token or API key).
 export function authenticateRequest(req: Request, res: Response, next: NextFunction) {
-  if (!req.tenantContext || !req.user) {
-    const tenantId = (req.headers['x-tenant-id'] as string) || 'tenant-default';
-    const isSuperAdmin = req.headers['x-superadmin'] === 'true';
-
-    req.tenantContext = {
-      tenantId,
-      userId: 'usr_default_admin',
-      userEmail: 'admin@saudi-erp.com',
-      role: isSuperAdmin ? 'SUPER_ADMIN' : 'OWNER',
-      permissions: ['*'],
-      isPlatformSuperAdmin: isSuperAdmin,
-      correlationId: 'req-' + Date.now(),
-      ipAddress: req.ip || '127.0.0.1',
-      userAgent: req.headers['user-agent'] || 'system-agent',
-    };
-    req.tenantRepo = new TenantScopedRepository(req.tenantContext);
-    req.user = {
-      userId: req.tenantContext.userId,
-      email: req.tenantContext.userEmail,
-      tenantId: req.tenantContext.tenantId,
-      role: req.tenantContext.role,
-      isPlatformSuperAdmin: isSuperAdmin,
-    };
+  if (!req.tenantContext) {
+    return res.status(401).json({
+      error: 'UNAUTHORIZED',
+      message: 'Authentication required.',
+    });
   }
   next();
 }

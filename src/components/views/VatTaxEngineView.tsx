@@ -326,11 +326,8 @@ export const VatTaxEngineView: React.FC = () => {
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-xl font-bold text-slate-900">
-                  {isAr ? 'محرك ضريبة القيمة المضافة وسجل الزكاة والضريبة' : 'VAT & Tax Engine (Phase 09)'}
+                  {isAr ? 'ضريبة القيمة المضافة' : 'VAT'}
                 </h1>
-                <Badge variant="success" size="sm">
-                  {isAr ? 'المرحلة 09 مكتملة' : 'Phase 09 Audited'}
-                </Badge>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
                 {isAr
@@ -428,7 +425,7 @@ export const VatTaxEngineView: React.FC = () => {
           {/* GL Reconciliation Balance Check */}
           <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mb-1">
-              <span>{isAr ? 'مطابقة الأستاذ العام (Rule G3)' : 'GL Reconciliation'}</span>
+              <span>{isAr ? 'مطابقة الأستاذ العام' : 'GL Reconciliation'}</span>
               <ShieldCheck className="w-4 h-4 text-emerald-600" />
             </div>
             <div className="flex items-center gap-2">
@@ -898,7 +895,7 @@ export const VatTaxEngineView: React.FC = () => {
               <div>
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                   <Scale className="w-5 h-5 text-emerald-600" />
-                  <span>{isAr ? 'تقرير مطابقة سجل الضريبة مع الأستاذ العام (Rule G3 Reconciliation)' : 'GL VAT Reconciliation Report'}</span>
+                  <span>{isAr ? 'تقرير مطابقة سجل الضريبة مع الأستاذ العام' : 'GL VAT Reconciliation Report'}</span>
                 </h2>
                 <p className="text-xs text-slate-500">
                   {isAr
@@ -1414,7 +1411,7 @@ export const VatTaxEngineView: React.FC = () => {
                 <p className="text-slate-600">
                   {isAr
                     ? 'تقريب نصف لأعلى على مستوى السطر (Half-Up 2dp per line) مع جمع الأسطر المستقل عملاً بالمعيارين G7 و G8'
-                    : 'Statutory half-up line rounding with sum of lines (Rules G7/G8)'}
+                    : 'Statutory half-up line rounding with sum of lines'}
                 </p>
               </div>
             </div>

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { logger } from './logger.js';
+import { env } from './env.js';
 import { hashPassword } from './security.js';
 import { SAUDI_STANDARD_CHART_OF_ACCOUNTS, SYSTEM_DEFAULT_DOCUMENT_TYPES } from '../db/seed-system.js';
 import { toHalalas, fromHalalasToDisplay } from '../../src/lib/accounting.js';
@@ -1170,6 +1171,8 @@ export class CentralTenantDataStore {
   private sequenceLocks = new Map<string, Promise<void>>();
 
   constructor() {
+    // Demo company/users (published password) are only seeded when enabled; see env.SEED_DEMO_DATA.
+    if (!env.SEED_DEMO_DATA) return;
     try {
       this.initDefaultSeed();
     } catch {
@@ -2007,11 +2010,13 @@ export class CentralTenantDataStore {
       phone?: string;
       email?: string;
       adminUserId: string;
+      /** Pre-reserved unique code (from the database sequence when persistence is on). */
+      code?: string;
     }
   ): CompanyTenant {
     const tenantId = crypto.randomUUID();
     const count = this.tenants.size + 1;
-    const code = `TNT-${1000 + count}`;
+    const code = params.code || `TNT-${1000 + count}`;
 
     const tenant: CompanyTenant = {
       id: tenantId,
@@ -2055,6 +2060,36 @@ export class CentralTenantDataStore {
       createdAt: new Date().toISOString(),
     };
     this.branches.set(tenantId, [mainBranch]);
+
+    // 2-10, 12-14. Default warehouse, cash, bank, chart of accounts, sequences, periods, roles, units
+    this.initializeTenantDefaults(tenant, mainBranch);
+
+    // 11. Assign Owner Role to the Creator
+    const membership: UserMembership = {
+      id: crypto.randomUUID(),
+      tenantId,
+      userId: params.adminUserId,
+      roleCode: 'OWNER',
+      branchId,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    };
+    this.memberships.set(tenantId, [membership]);
+
+    return tenant;
+  }
+
+  /**
+   * Builds the default operating scaffolding of a company (warehouse, cash vault, bank,
+   * Saudi chart of accounts, account mappings, document sequences, fiscal year and periods,
+   * cost center, roles, units catalog and empty collections).
+   *
+   * Used by createTenant, and when a company persisted in PostgreSQL is loaded into a
+   * fresh process. It never touches the tenant record, branches or memberships.
+   */
+  public initializeTenantDefaults(tenant: CompanyTenant, mainBranch: Branch): void {
+    const tenantId = tenant.id;
+    const branchId = mainBranch.id;
 
     // 2. Create Default Warehouse
     const warehouseId = crypto.randomUUID();
@@ -2226,18 +2261,6 @@ export class CentralTenantDataStore {
     this.openingBalances.set(tenantId, []);
     this.draftJournals.set(tenantId, []);
 
-    // 11. Assign Owner Role to the Creator
-    const membership: UserMembership = {
-      id: crypto.randomUUID(),
-      tenantId,
-      userId: params.adminUserId,
-      roleCode: 'OWNER',
-      branchId,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-    };
-    this.memberships.set(tenantId, [membership]);
-
     // 12. Initialize Tenant Roles with standard system defaults
     this.roles.set(tenantId, [...SYSTEM_DEFAULT_ROLES]);
 
@@ -2263,7 +2286,6 @@ export class CentralTenantDataStore {
     this.unitsCatalog.set(tenantId, defaultUnits);
     this.customerPriceRules.set(tenantId, []);
 
-    return tenant;
   }
 
   // Concurrency-safe atomic document sequence incrementer

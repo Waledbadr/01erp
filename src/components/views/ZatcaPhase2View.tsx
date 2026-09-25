@@ -431,7 +431,7 @@ export const ZatcaPhase2View: React.FC<ZatcaPhase2ViewProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-slate-900 font-display">
-                {isAr ? 'منظومة الفوترة الإلكترونية — مرحلة الربط والتكامل (ZATCA Phase 2)' : 'ZATCA Phase 2 E-Invoicing Integration'}
+                {isAr ? 'الفوترة الإلكترونية (زاتكا)' : 'E-Invoicing (ZATCA)'}
               </h1>
               <Badge variant={config?.environment === 'PRODUCTION' ? 'success' : 'warning'}>
                 {config?.environment === 'PRODUCTION' ? (isAr ? 'بيئة الإنتاج' : 'PRODUCTION') : (isAr ? 'بيئة المحاكاة' : 'SIMULATION')}
@@ -1215,7 +1215,7 @@ export const ZatcaPhase2View: React.FC<ZatcaPhase2ViewProps> = ({
 
           <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs space-y-4">
             <h2 className="text-base font-bold text-slate-900">
-              {isAr ? 'تفصيل علامات TLV التسع (Phase 1 & 2 Tags)' : '9-Tag TLV Breakdown'}
+              {isAr ? 'تفصيل علامات TLV التسع' : '9-Tag TLV Breakdown'}
             </h2>
 
             {decodedQr && decodedQr.tags ? (

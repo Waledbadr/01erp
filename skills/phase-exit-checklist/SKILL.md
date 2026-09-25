@@ -6,7 +6,7 @@ description: The official, rigorous verification checklist required before decla
 # Phase Exit Checklist Skill (`skills/phase-exit-checklist/SKILL.md`)
 
 ## 1. Overview
-No phase in the project may be marked as COMPLETE in `PHASE_STATUS.md` without passing every single check in this checklist. Skipping any item is an immediate quality violation.
+No phase in the project may be marked as COMPLETE in `docs/development/PHASE_STATUS.md` without passing every single check in this checklist. Skipping any item is an immediate quality violation.
 
 ---
 
@@ -46,7 +46,7 @@ No phase in the project may be marked as COMPLETE in `PHASE_STATUS.md` without p
 - [ ] Mobile viewport (375px - 414px): Bottom navigation visible, tables transform into clean, stacked cards, touch targets $\ge 44\text{px}$.
 
 ### Step 7: Phase Status Documentation Update
-- [ ] Update `PHASE_STATUS.md` with:
+- [ ] Update `docs/development/PHASE_STATUS.md` with:
   - Exact completion date.
   - Test suite count and pass status.
   - Declared gaps / external dependencies (must be "Zero").

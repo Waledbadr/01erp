@@ -9,6 +9,10 @@ export interface AppEnv {
   APP_URL: string;
   ZATCA_ENV: 'sandbox' | 'simulation' | 'production';
   LOG_LEVEL: 'debug' | 'info' | 'warn' | 'error';
+  /** True when identity/company/session data is stored in PostgreSQL (DATABASE_URL set). */
+  PERSISTENCE_ENABLED: boolean;
+  /** Seed the in-memory demo company and demo users (with a published password). */
+  SEED_DEMO_DATA: boolean;
 }
 
 export function validateEnv(): AppEnv {
@@ -30,6 +34,16 @@ export function validateEnv(): AppEnv {
     process.env.SUPABASE_JWT_SECRET ||
     'dev-local-jwt-secret-min-32-chars-saudi-erp';
 
+  // Persistence is on whenever a database is configured. Unit-test runs (NODE_ENV=test)
+  // stay in memory unless ERP_PERSISTENCE=on is set explicitly; ERP_PERSISTENCE=off disables it.
+  const persistenceFlag = (process.env.ERP_PERSISTENCE || '').toLowerCase();
+  const persistenceEnabled =
+    Boolean(dbUrl) && (persistenceFlag ? persistenceFlag === 'on' : nodeEnv !== 'test');
+
+  // Demo accounts use a published password, so they are off by default once real data is stored.
+  const seedFlag = (process.env.SEED_DEMO_DATA || '').toLowerCase();
+  const seedDemoData = seedFlag ? seedFlag === 'true' : !persistenceEnabled;
+
   return {
     PORT: port,
     NODE_ENV: nodeEnv,
@@ -38,6 +52,8 @@ export function validateEnv(): AppEnv {
     APP_URL: appUrl,
     ZATCA_ENV: zatcaEnv,
     LOG_LEVEL: logLevel,
+    PERSISTENCE_ENABLED: persistenceEnabled,
+    SEED_DEMO_DATA: seedDemoData,
   };
 }
 

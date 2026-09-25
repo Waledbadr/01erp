@@ -191,8 +191,8 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
         fetch('/api/v1/treasury/receipts'),
         fetch('/api/v1/treasury/payments'),
         fetch('/api/v1/treasury/transfers'),
-        fetch('/api/v1/treasury/settlements'),
-        fetch('/api/v1/treasury/reconciliations'),
+        fetch('/api/v1/treasury/petty-cash'),
+        fetch('/api/v1/treasury/bank-reconciliations'),
         fetch('/api/v1/treasury/cheques'),
         fetch('/api/v1/treasury/overview'),
       ]);
@@ -534,7 +534,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
     ];
 
     try {
-      const res = await fetch('/api/v1/treasury/settlements', {
+      const res = await fetch('/api/v1/treasury/petty-cash', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -584,7 +584,7 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
     }
 
     try {
-      const res = await fetch('/api/v1/treasury/reconciliations', {
+      const res = await fetch('/api/v1/treasury/bank-reconciliations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -713,11 +713,11 @@ export function TreasuryMasterView({ onNavigate }: { onNavigate?: (route: string
     <div className="space-y-6 pb-12" dir={isAr ? 'rtl' : 'ltr'}>
       {/* Top Header */}
       <PageHeader
-        title={isAr ? 'إدارة الخزينة والسيولة والمدفوعات' : 'Treasury, Liquidity & Payment Management'}
+        title={isAr ? 'الصندوق والبنوك' : 'Cash & Banks'}
         subtitle={
           isAr
-            ? 'منظومة الخزينة المتقدمة: حسابات الصناديق والبنوك، سندات القبض والصرف، تسوية العهد النقدية، ومطابقة الحسابات البنكية بدقة الهللات (القواعد G1, G7, G8).'
-            : 'Advanced treasury module: Cash vaults, bank accounts, receipts, payments, petty cash settlements, and bank reconciliation with exact Halalas precision (Rules G1, G7, G8).'
+            ? 'منظومة الخزينة المتقدمة: حسابات الصناديق والبنوك، سندات القبض والصرف، تسوية العهد النقدية، ومطابقة الحسابات البنكية بدقة الهللات.'
+            : 'Advanced treasury module: Cash vaults, bank accounts, receipts, payments, petty cash settlements, and bank reconciliation with exact Halalas precision.'
         }
         actions={
           <div className="flex flex-wrap items-center gap-2">

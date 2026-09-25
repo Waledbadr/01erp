@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+# Local build/test artefacts (added 2026-09-25)
+.next/
+scratch-db/
+test-results/
+*.tsbuildinfo

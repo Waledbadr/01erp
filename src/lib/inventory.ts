@@ -753,7 +753,16 @@ export function reconstructStockAsOfDate(
  * Detects low stock items based on minimum stock levels and reorder points.
  */
 export function detectLowStockAlerts(
-  items: Array<{ id: string; sku: string; nameAr: string; minimumStockLevel?: number; reorderQuantity?: number }>,
+  items: Array<{
+    id: string;
+    sku: string;
+    nameAr: string;
+    type?: string;
+    minimumStockLevel?: number;
+    /** Field name used by the item master (Item.minStockLevel). */
+    minStockLevel?: number;
+    reorderQuantity?: number;
+  }>,
   warehouseStocks: Array<{ itemId: string; currentStockBaseQty: number }>
 ): Array<{
   itemId: string;
@@ -764,12 +773,13 @@ export function detectLowStockAlerts(
   reorderQuantity: number;
   status: 'OUT_OF_STOCK' | 'CRITICAL_LOW' | 'REORDER_NEEDED' | 'ADEQUATE';
 }> {
-  return items.map((item) => {
+  // Services hold no stock and never need reordering.
+  return items.filter((item) => item.type !== 'SERVICE').map((item) => {
     const totalQty = warehouseStocks
       .filter((s) => s.itemId === item.id)
       .reduce((sum, s) => sum + s.currentStockBaseQty, 0);
 
-    const minLevel = item.minimumStockLevel || 0;
+    const minLevel = item.minimumStockLevel || item.minStockLevel || 0;
     const reorderQty = item.reorderQuantity || 0;
 
     let status: 'OUT_OF_STOCK' | 'CRITICAL_LOW' | 'REORDER_NEEDED' | 'ADEQUATE' = 'ADEQUATE';
