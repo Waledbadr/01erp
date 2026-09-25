@@ -454,7 +454,8 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(data.message || 'فشل تسجيل المنشأة. يرجى مراجعة البيانات.');
+        const errMsg = data.message || data.details || data.error || 'فشل تسجيل المنشأة. يرجى مراجعة البيانات.';
+        toast.error(errMsg);
         return;
       }
 
