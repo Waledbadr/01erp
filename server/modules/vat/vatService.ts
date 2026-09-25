@@ -548,8 +548,17 @@ export function getVatReconciliationService(
   let glInputVatCreditCents = 0n;
   // Journal lines from different modules store cents as bigint, number or string;
   // convert explicitly (mixing bigint and number throws a TypeError).
-  const cents = (v: unknown): bigint =>
-    typeof v === 'bigint' ? v : BigInt(Math.round(Number(v ?? 0) || 0));
+  const cents = (v: unknown): bigint => {
+    if (typeof v === 'bigint') return v;
+    if (typeof v === 'string' && /^-?\d+$/.test(v.trim())) return BigInt(v.trim());
+    const n = Number(v ?? 0);
+    if (!Number.isFinite(n)) return 0n;
+    const r = Math.round(n);
+    if (!Number.isSafeInteger(r)) {
+      throw new Error(`Journal line amount in cents exceeds safe integer range: ${String(v)}`);
+    }
+    return BigInt(r);
+  };
 
   for (const j of journals) {
     if (j.status === 'POSTED' && j.entryDate <= cutoff) {

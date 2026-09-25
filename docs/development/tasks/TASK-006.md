@@ -47,7 +47,7 @@ Behaviour without `DATABASE_URL` is unchanged (in-memory, demo seed on).
 
 ## Acceptance evidence (local, PostgreSQL 16, Node 22)
 
-- `npm run test:persistence` with `TEST_DATABASE_URL`: 9/9 passed, twice. The API runs as separate
+- `npm run test:persistence` with `TEST_DATABASE_URL`: 9/9 passed, twice (10/10 after the RLS check in the addendum; 11/11 with the default-privileges check). The API runs as separate
   processes that are killed with SIGKILL between steps:
   register → hard restart → same session token valid, login works, chart of accounts present;
   invite on process A → login on process B; logout on B → token rejected on A;

@@ -185,6 +185,18 @@ describe.skipIf(!DB_URL)('Identity persistence on PostgreSQL (restart & multi-in
     }
   });
 
+  it('tables created after the migrations do not inherit public API access', async () => {
+    await pool.query('CREATE TABLE future_table_check (id int)');
+    await pool.query('CREATE SEQUENCE future_seq_check');
+    for (const role of ['anon', 'authenticated']) {
+      const t = await pool.query(`SELECT has_table_privilege($1, 'future_table_check', 'SELECT') AS v`, [role]);
+      expect(t.rows[0].v, `${role} on a new table`).toBe(false);
+      const q = await pool.query(`SELECT has_sequence_privilege($1, 'future_seq_check', 'USAGE') AS v`, [role]);
+      expect(q.rows[0].v, `${role} on a new sequence`).toBe(false);
+    }
+    await pool.query('DROP TABLE future_table_check; DROP SEQUENCE future_seq_check;');
+  });
+
   it('after a hard restart (process B) the session, user and company are still there', async () => {
     const b = await start();
     const me = await call(b, 'GET', '/api/v1/auth/me', undefined, ownerToken);

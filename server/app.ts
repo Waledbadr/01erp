@@ -58,7 +58,15 @@ export function createExpressApp(): express.Express {
   app.use(securityHeadersMiddleware);
 
   // 3. Parsers
-  app.use(express.json({ limit: '10mb' }));
+  app.use(
+    express.json({
+      limit: '10mb',
+      // Keep the exact bytes for webhook signature verification (HMAC over the raw body).
+      verify: (req, _res, buf) => {
+        (req as Request & { rawBody?: Buffer }).rawBody = buf;
+      },
+    }),
+  );
   app.use(express.urlencoded({ extended: true }));
 
   // 3b. Identity persistence (users, companies, sessions) when DATABASE_URL is set.

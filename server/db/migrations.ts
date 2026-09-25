@@ -143,6 +143,25 @@ export const MIGRATIONS: Migration[] = [
       END $$;
     `,
   },
+  {
+    // 003 closed the tables that existed then. Supabase also grants anon/authenticated
+    // privileges on every FUTURE table and sequence through default privileges; revoke those
+    // for objects created by the role running migrations, so new tables start closed too.
+    version: '004_revoke_default_public_api_privileges',
+    sql: `
+      DO $$
+      DECLARE r TEXT;
+      BEGIN
+        FOREACH r IN ARRAY ARRAY['anon','authenticated'] LOOP
+          IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = r) THEN
+            EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON TABLES FROM %I', r);
+            EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON SEQUENCES FROM %I', r);
+            EXECUTE format('ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM %I', r);
+          END IF;
+        END LOOP;
+      END $$;
+    `,
+  },
 ];
 
 const MIGRATION_LOCK_KEY = 482_917_001; // arbitrary, stable advisory-lock id

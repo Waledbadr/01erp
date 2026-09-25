@@ -1089,8 +1089,10 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                         <td className="p-3 text-center whitespace-nowrap">
                           {inv.status !== 'DRAFT' ? (
                             (() => {
-                              // Every status except DRAFT was posted to the ledger; show what it means to the user.
                               const labels: Record<string, [string, string, string]> = {
+                                SUBMITTED: ['بانتظار الاعتماد', 'Submitted', 'bg-slate-100 text-slate-700'],
+                                APPROVED: ['معتمدة – غير مرحّلة', 'Approved – not posted', 'bg-slate-100 text-slate-700'],
+                                CLOSED: ['مغلقة', 'Closed', 'bg-slate-100 text-slate-600'],
                                 PAID: ['مدفوعة', 'Paid', 'bg-emerald-100 text-emerald-800'],
                                 POSTED: ['مرحّلة – غير مدفوعة', 'Posted – unpaid', 'bg-amber-100 text-amber-800'],
                                 PARTIALLY_PAID: ['مدفوعة جزئياً', 'Partly paid', 'bg-sky-100 text-sky-800'],
@@ -1100,7 +1102,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                                 PARTIALLY_RETURNED: ['مرتجعة جزئياً', 'Partly returned', 'bg-violet-100 text-violet-800'],
                                 FULLY_RETURNED: ['مرتجعة', 'Returned', 'bg-violet-100 text-violet-800'],
                               };
-                              const l = labels[inv.status] || [inv.status, inv.status, 'bg-emerald-100 text-emerald-800'];
+                              const l = labels[inv.status] || [inv.status, inv.status, 'bg-slate-100 text-slate-700'];
                               return (
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${l[2]}`}>
                                   <CheckCircle className="w-3 h-3" />
