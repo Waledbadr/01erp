@@ -38,6 +38,7 @@ import {
   SalesOrderStatus,
   PaymentMethod,
   CreditNoteReason,
+  CustomerPriceAgreement,
   calculateInvoiceLine,
   calculateChargeLine,
   calculateInvoiceTotals,
@@ -2911,4 +2912,198 @@ export function seedDefaultSales(
   store.salesOrders.set(tenantId, seededOrders);
   store.salesCreditNotes.set(tenantId, []);
   store.customerReceipts.set(tenantId, seededReceipts);
+
+  // 4. Seed Default Customer Price Agreements with Strict Unit & Price Rules
+  const seededAgreements: CustomerPriceAgreement[] = [
+    {
+      id: crypto.randomUUID(),
+      tenantId,
+      customerId: custJarir.id,
+      customerNameAr: custJarir.nameAr,
+      customerNameEn: custJarir.nameEn,
+      itemId: itemWater.id,
+      itemCode: itemWater.sku,
+      itemNameAr: itemWater.nameAr,
+      itemNameEn: itemWater.nameEn,
+      uomId: itemWater.units[0]?.id || 'unit-ctn',
+      uomNameAr: itemWater.units[0]?.nameAr || 'كرتون (24 عبوة)',
+      uomNameEn: itemWater.units[0]?.nameEn || 'Carton',
+      conversionFactor: itemWater.units[0]?.conversionFactor || 24,
+      agreedPriceSar: 14.50, // سعر تفضيلي ملزم
+      minQuantity: 5,
+      isStrictEnforced: true, // إلزام صارم بالسعر والوحدة المتفق عليها
+      validFrom: '2026-01-01',
+      validTo: '2026-12-31',
+      status: 'ACTIVE',
+      notes: 'عقد توريد سنوي B2B - ملزم بسعر 14.50 ﷼ للكرتون مع منع تغيير السعر أو البيع بغير وحدة الكرتون.',
+      createdAt: `${todayStr}T08:00:00.000Z`,
+      updatedAt: `${todayStr}T08:00:00.000Z`,
+    },
+    {
+      id: crypto.randomUUID(),
+      tenantId,
+      customerId: custJarir.id,
+      customerNameAr: custJarir.nameAr,
+      customerNameEn: custJarir.nameEn,
+      itemId: itemPaper.id,
+      itemCode: itemPaper.sku,
+      itemNameAr: itemPaper.nameAr,
+      itemNameEn: itemPaper.nameEn,
+      uomId: itemPaper.units[0]?.id || 'unit-box',
+      uomNameAr: itemPaper.units[0]?.nameAr || 'كرتون (5 رزم)',
+      uomNameEn: itemPaper.units[0]?.nameEn || 'Box',
+      conversionFactor: itemPaper.units[0]?.conversionFactor || 5,
+      agreedPriceSar: 85.00,
+      minQuantity: 2,
+      isStrictEnforced: true,
+      validFrom: '2026-01-01',
+      validTo: '2026-12-31',
+      status: 'ACTIVE',
+      notes: 'اتفاقية تسعير خاصة للمؤسسات - وحدة الكرتون حصراً.',
+      createdAt: `${todayStr}T08:00:00.000Z`,
+      updatedAt: `${todayStr}T08:00:00.000Z`,
+    }
+  ];
+  store.customerPriceAgreements.set(tenantId, seededAgreements);
 }
+
+// -------------------------------------------------------------
+// 9. CUSTOMER PRICE AGREEMENTS CRUD & ENFORCEMENT
+// -------------------------------------------------------------
+
+export function getCustomerPriceAgreementsService(
+  store: CentralTenantDataStore,
+  context: TenantContext,
+  customerId?: string
+): CustomerPriceAgreement[] {
+  const agreements = store.customerPriceAgreements.get(context.tenantId) || [];
+  if (customerId) {
+    return agreements.filter((a) => a.customerId === customerId);
+  }
+  return agreements;
+}
+
+export function getCustomerPriceAgreementByIdService(
+  store: CentralTenantDataStore,
+  context: TenantContext,
+  id: string
+): CustomerPriceAgreement | undefined {
+  const agreements = store.customerPriceAgreements.get(context.tenantId) || [];
+  return agreements.find((a) => a.id === id);
+}
+
+export function createCustomerPriceAgreementService(
+  store: CentralTenantDataStore,
+  context: TenantContext,
+  payload: {
+    customerId: string;
+    itemId: string;
+    uomId: string;
+    agreedPriceSar: number;
+    minQuantity?: number;
+    maxQuantity?: number;
+    fixedDiscountPercent?: number;
+    isStrictEnforced?: boolean;
+    validFrom?: string;
+    validTo?: string;
+    notes?: string;
+  }
+): CustomerPriceAgreement {
+  const customers = store.customers.get(context.tenantId) || [];
+  const items = store.items.get(context.tenantId) || [];
+
+  const customer = customers.find((c) => c.id === payload.customerId);
+  if (!customer) throw new Error(`Customer with ID ${payload.customerId} not found.`);
+
+  const item = items.find((i) => i.id === payload.itemId);
+  if (!item) throw new Error(`Item with ID ${payload.itemId} not found.`);
+
+  const unit = item.units?.find((u) => u.id === payload.uomId) || item.units?.[0];
+  if (!unit) throw new Error(`Unit ${payload.uomId} not found on item.`);
+
+  if (payload.agreedPriceSar <= 0) {
+    throw new Error('Agreed unit price must be greater than zero.');
+  }
+
+  const agreements = store.customerPriceAgreements.get(context.tenantId) || [];
+
+  // Check if an active agreement for this (customer, item, unit) already exists
+  const existingIndex = agreements.findIndex(
+    (a) => a.customerId === payload.customerId && a.itemId === payload.itemId && a.uomId === payload.uomId && a.status === 'ACTIVE'
+  );
+
+  const now = new Date().toISOString();
+  const newAgreement: CustomerPriceAgreement = {
+    id: crypto.randomUUID(),
+    tenantId: context.tenantId,
+    customerId: customer.id,
+    customerNameAr: customer.nameAr,
+    customerNameEn: customer.nameEn,
+    itemId: item.id,
+    itemCode: item.sku,
+    itemNameAr: item.nameAr,
+    itemNameEn: item.nameEn,
+    uomId: unit.id,
+    uomNameAr: unit.nameAr,
+    uomNameEn: unit.nameEn || '',
+    conversionFactor: unit.conversionFactor || 1,
+    agreedPriceSar: roundHalalas(payload.agreedPriceSar),
+    minQuantity: payload.minQuantity ? Number(payload.minQuantity) : undefined,
+    maxQuantity: payload.maxQuantity ? Number(payload.maxQuantity) : undefined,
+    fixedDiscountPercent: payload.fixedDiscountPercent ? Number(payload.fixedDiscountPercent) : 0,
+    isStrictEnforced: payload.isStrictEnforced !== false, // default true
+    validFrom: payload.validFrom,
+    validTo: payload.validTo,
+    status: 'ACTIVE',
+    notes: payload.notes || '',
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  if (existingIndex >= 0) {
+    // Supersede existing agreement
+    agreements[existingIndex] = newAgreement;
+  } else {
+    agreements.push(newAgreement);
+  }
+
+  store.customerPriceAgreements.set(context.tenantId, agreements);
+  return newAgreement;
+}
+
+export function updateCustomerPriceAgreementService(
+  store: CentralTenantDataStore,
+  context: TenantContext,
+  id: string,
+  updates: Partial<CustomerPriceAgreement>
+): CustomerPriceAgreement {
+  const agreements = store.customerPriceAgreements.get(context.tenantId) || [];
+  const idx = agreements.findIndex((a) => a.id === id);
+  if (idx < 0) throw new Error(`Customer price agreement ${id} not found.`);
+
+  const current = agreements[idx];
+  const updated: CustomerPriceAgreement = {
+    ...current,
+    ...updates,
+    agreedPriceSar: updates.agreedPriceSar !== undefined ? roundHalalas(updates.agreedPriceSar) : current.agreedPriceSar,
+    updatedAt: new Date().toISOString(),
+  };
+
+  agreements[idx] = updated;
+  store.customerPriceAgreements.set(context.tenantId, agreements);
+  return updated;
+}
+
+export function deleteCustomerPriceAgreementService(
+  store: CentralTenantDataStore,
+  context: TenantContext,
+  id: string
+): boolean {
+  const agreements = store.customerPriceAgreements.get(context.tenantId) || [];
+  const filtered = agreements.filter((a) => a.id !== id);
+  if (filtered.length === agreements.length) return false;
+
+  store.customerPriceAgreements.set(context.tenantId, filtered);
+  return true;
+}
+

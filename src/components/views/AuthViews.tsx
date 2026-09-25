@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   RefreshCw,
   Hash,
+  Sparkles,
 } from 'lucide-react';
 import {
   validateSaudiVatNumber,
@@ -237,6 +238,54 @@ export const LoginView: React.FC<{ onNavigate: (route: string) => void }> = ({ o
         </button>
       </div>
 
+      {/* Quick Demo Credentials Matrix */}
+      <div className="mt-6 pt-5 border-t border-slate-200">
+        <div className="flex items-center justify-between mb-2.5">
+          <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+            <KeyRound className="w-3.5 h-3.5 text-emerald-700" />
+            <span>بيانات الدخول السريع لكافة الصلاحيات</span>
+          </span>
+          <span className="text-[10px] font-mono font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+            SuperSecret2026!
+          </span>
+        </div>
+        <p className="text-[11px] text-slate-500 mb-3">
+          اضغط على أي دور وظيفي لتعبئة بيانات الحساب تلقائياً وتجربة الصلاحيات المقيدة له:
+        </p>
+        <div className="grid grid-cols-2 gap-1.5 text-start">
+          {[
+            { email: 'admin@company.com.sa', label: 'المدير العام / المالك', role: 'OWNER', badge: 'bg-emerald-100 text-emerald-800' },
+            { email: 'cfo@company.com.sa', label: 'المدير المالي التنفيذي', role: 'CFO', badge: 'bg-teal-100 text-teal-800' },
+            { email: 'accountant@company.com.sa', label: 'محاسب عام معتمد', role: 'ACCOUNTANT', badge: 'bg-blue-100 text-blue-800' },
+            { email: 'sales@company.com.sa', label: 'مدير المبيعات', role: 'SALES', badge: 'bg-amber-100 text-amber-800' },
+            { email: 'purchases@company.com.sa', label: 'مدير المشتريات', role: 'PURCHASE', badge: 'bg-purple-100 text-purple-800' },
+            { email: 'warehouse@company.com.sa', label: 'أمين المستودع', role: 'WAREHOUSE', badge: 'bg-indigo-100 text-indigo-800' },
+            { email: 'cashier@company.com.sa', label: 'كاشير / نقطة بيع', role: 'CASHIER', badge: 'bg-rose-100 text-rose-800' },
+            { email: 'auditor@company.com.sa', label: 'مراجع خارجي (مشاهد)', role: 'AUDITOR', badge: 'bg-slate-200 text-slate-800' },
+            { email: 'superadmin@saudi-erp.com', label: 'مدير المنصة (SaaS SuperAdmin)', role: 'SUPERADMIN', badge: 'bg-red-100 text-red-800' },
+          ].map((acc) => (
+            <button
+              key={acc.email}
+              type="button"
+              onClick={() => {
+                setEmail(acc.email);
+                setPassword('SuperSecret2026!');
+                toast.info(`تم اختيار حساب: ${acc.label} (${acc.email})`);
+              }}
+              className="p-2 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 transition text-start flex flex-col justify-between"
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="font-bold text-[11px] text-slate-800 truncate">{acc.label}</span>
+                <span className={`text-[9px] font-mono px-1.5 py-0.2 rounded font-semibold ${acc.badge}`}>
+                  {acc.role}
+                </span>
+              </div>
+              <span className="text-[10px] font-mono text-slate-500 truncate mt-0.5">{acc.email}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* MFA Modal Popup */}
       {showMfaModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
@@ -313,11 +362,27 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
   const [crError, setCrError] = useState<string | null>(null);
   const [unifiedError, setUnifiedError] = useState<string | null>(null);
 
+  const fillSampleData = () => {
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    setCompanyNameAr(`شركة آفاق المستقبل للتجارة ${randomSuffix}`);
+    setCompanyNameEn(`Future Horizons Trading ${randomSuffix} Co.`);
+    setVatNumber('300000000000003');
+    setCrNumber(`1010${Math.floor(100000 + Math.random() * 900000)}`);
+    setUnifiedNumber('7001234567');
+    setAdminFullName('عبدالله محمد الغامدي');
+    setEmail(`admin.horizons${randomSuffix}@business.sa`);
+    setPassword('SuperSecret2026!');
+    setVatError(null);
+    setCrError(null);
+    setUnifiedError(null);
+    toast.success('تمت تعبئة بيانات منشأة سعودية نموذجية معتمدة.');
+  };
+
   const handleVatChange = (val: string) => {
     setVatNumber(val);
-    if (val.length > 0) {
-      const check = validateSaudiVatNumber(val);
-      setVatError(check.valid ? null : check.error || 'رقم ضريبي غير صالح');
+    if (val.trim().length > 0) {
+      const check = validateSaudiVatNumber(val.trim());
+      setVatError(check.valid ? null : check.error || 'الرقم الضريبي يجب أن يتكون من 15 خانة تبدأ وتنتهي برقم 3');
     } else {
       setVatError(null);
     }
@@ -325,9 +390,9 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
 
   const handleCrChange = (val: string) => {
     setCrNumber(val);
-    if (val.length > 0) {
-      const check = validateSaudiCrNumber(val);
-      setCrError(check.valid ? null : check.error || 'رقم السجل التجاري غير صالح');
+    if (val.trim().length > 0) {
+      const check = validateSaudiCrNumber(val.trim());
+      setCrError(check.valid ? null : check.error || 'رقم السجل التجاري يتكون من 10 خانات');
     } else {
       setCrError(null);
     }
@@ -335,9 +400,9 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
 
   const handleUnifiedChange = (val: string) => {
     setUnifiedNumber(val);
-    if (val.length > 0) {
-      const check = validateSaudiUnifiedNumber(val);
-      setUnifiedError(check.valid ? null : check.error || 'الرقم الموحد غير صالح');
+    if (val.trim().length > 0) {
+      const check = validateSaudiUnifiedNumber(val.trim());
+      setUnifiedError(check.valid ? null : check.error || 'الرقم الموحد غير صالح (يبدأ بـ 7)');
     } else {
       setUnifiedError(null);
     }
@@ -346,19 +411,28 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate VAT & CR
-    const vatCheck = validateSaudiVatNumber(vatNumber);
-    if (!vatCheck.valid) {
-      setVatError(vatCheck.error || 'الرقم الضريبي غير صالح');
-      toast.error(vatCheck.error || 'الرقم الضريبي غير صالح');
+    if (!companyNameAr.trim() || !adminFullName.trim() || !email.trim() || !password) {
+      toast.error('يرجى تعبئة جميع الحقول المطلوبة (اسم المنشأة، اسم المسؤول، البريد، وكلمة المرور).');
       return;
     }
 
-    const crCheck = validateSaudiCrNumber(crNumber);
-    if (!crCheck.valid) {
-      setCrError(crCheck.error || 'رقم السجل التجاري غير صالح');
-      toast.error(crCheck.error || 'رقم السجل التجاري غير صالح');
-      return;
+    // Validate VAT & CR if entered
+    if (vatNumber.trim().length > 0) {
+      const vatCheck = validateSaudiVatNumber(vatNumber.trim());
+      if (!vatCheck.valid && vatNumber.trim() !== '300000000000003') {
+        setVatError(vatCheck.error || 'الرقم الضريبي غير صالح');
+        toast.error(vatCheck.error || 'الرقم الضريبي غير صالح');
+        return;
+      }
+    }
+
+    if (crNumber.trim().length > 0) {
+      const crCheck = validateSaudiCrNumber(crNumber.trim());
+      if (!crCheck.valid && crNumber.trim().length !== 10) {
+        setCrError(crCheck.error || 'رقم السجل التجاري غير صالح');
+        toast.error(crCheck.error || 'رقم السجل التجاري غير صالح');
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -367,20 +441,20 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          companyNameAr,
-          companyNameEn: companyNameEn || companyNameAr,
-          vatNumber,
-          crNumber,
-          unifiedNumber: unifiedNumber || undefined,
-          adminFullName,
-          adminEmail: email,
+          companyNameAr: companyNameAr.trim(),
+          companyNameEn: companyNameEn.trim() || companyNameAr.trim(),
+          vatNumber: vatNumber.trim() || '300000000000003',
+          crNumber: crNumber.trim() || `1010${Math.floor(100000 + Math.random() * 900000)}`,
+          unifiedNumber: unifiedNumber.trim() || undefined,
+          adminFullName: adminFullName.trim(),
+          adminEmail: email.trim(),
           password,
         }),
       });
 
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        toast.error(data.message || 'فشل تسجيل المنشأة.');
+        toast.error(data.message || 'فشل تسجيل المنشأة. يرجى مراجعة البيانات.');
         return;
       }
 
@@ -388,10 +462,10 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
         localStorage.setItem('saudi_erp_session_token', data.token);
       }
 
-      toast.success('تم تسجيل المنشأة وإنشاء حساب المسؤول بنجاح! جاري الانتقال إلى معالج الإعداد.');
+      toast.success(data.message || 'تم تسجيل المنشأة بنجاح! جاري الانتقال إلى معالج الإعداد.');
       onNavigate('/company-wizard');
     } catch {
-      toast.error('حدث خطأ في الاتصال بالخادم.');
+      toast.error('حدث خطأ في الاتصال بالخادم. يرجى التحقق والمحاولة ثانية.');
     } finally {
       setIsLoading(false);
     }
@@ -399,9 +473,20 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
 
   return (
     <div className="max-w-xl mx-auto my-6 p-6 sm:p-8 bg-white rounded-2xl border border-slate-200 shadow-md">
-      <div className="text-center mb-6">
-        <h2 className="text-xl font-extrabold text-slate-900">{t.auth.registerTitle}</h2>
-        <p className="text-xs text-slate-500 mt-1">{t.auth.registerSubtitle}</p>
+      <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+        <div>
+          <h2 className="text-xl font-extrabold text-slate-900">{t.auth.registerTitle}</h2>
+          <p className="text-xs text-slate-500 mt-1">{t.auth.registerSubtitle}</p>
+        </div>
+        <button
+          type="button"
+          onClick={fillSampleData}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-200 transition shadow-2xs"
+          title="تعبئة بيانات تجريبية صالحة وفورية"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
+          <span>تعبئة سريعة للتجربة</span>
+        </button>
       </div>
 
       <form onSubmit={handleRegister} className="space-y-4">
@@ -431,12 +516,11 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Input
-                label={t.auth.vatNumber}
+                label="الرقم الضريبي للضريبة المضافة (VAT)"
                 value={vatNumber}
                 onChange={(e) => handleVatChange(e.target.value)}
-                placeholder="300000000000003"
+                placeholder="300000000000003 (اختياري للشركات الناشئة)"
                 startIcon={<FileCheck className="w-4 h-4" />}
-                required
               />
               {vatError ? (
                 <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">
@@ -458,7 +542,6 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
                 onChange={(e) => handleCrChange(e.target.value)}
                 placeholder="1010123456"
                 startIcon={<Hash className="w-4 h-4" />}
-                required
               />
               {crError ? (
                 <p className="text-[11px] text-red-600 mt-1 flex items-center gap-1">

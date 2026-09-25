@@ -176,6 +176,7 @@ export const CompanyWizardView: React.FC<{ onNavigate: (route: string) => void }
       if (res.ok) {
         toast.success(isAr ? `تم حفظ الخطوة ${stepNum} بنجاح` : `Step ${stepNum} saved successfully`);
         await fetchWizardStatus();
+        window.dispatchEvent(new CustomEvent('company-switched'));
         return true;
       }
     } catch {
@@ -207,6 +208,7 @@ export const CompanyWizardView: React.FC<{ onNavigate: (route: string) => void }
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+      window.dispatchEvent(new CustomEvent('company-switched'));
       toast.success(isAr ? 'تهانينا! اكتمل إعداد المنشأة وجاهزية النظام 100%' : 'Setup completed successfully!');
       onNavigate('/');
     }

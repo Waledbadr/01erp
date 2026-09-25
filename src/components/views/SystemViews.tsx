@@ -5,7 +5,7 @@ import { Badge } from '../ui/Badge.js';
 import { AlertTriangle, Wrench, ShieldCheck, ArrowRight, ArrowLeft } from 'lucide-react';
 
 export const NotFoundView: React.FC<{ onNavigate: (route: string) => void }> = ({ onNavigate }) => {
-  const { t, direction } = useI18n();
+  const { t, isAr } = useI18n();
 
   return (
     <div className="max-w-md mx-auto my-12 p-8 bg-white rounded-2xl border border-slate-200 shadow-md text-center">
@@ -14,9 +14,14 @@ export const NotFoundView: React.FC<{ onNavigate: (route: string) => void }> = (
       </div>
       <h2 className="text-xl font-bold text-slate-900 mb-2">{t.errors.notFoundTitle}</h2>
       <p className="text-xs sm:text-sm text-slate-500 mb-6">{t.errors.notFoundSubtitle}</p>
-      <Button variant="primary" onClick={() => onNavigate('/')} className="w-full">
-        {t.errors.backHome}
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button variant="primary" onClick={() => onNavigate('/')} className="w-full">
+          {isAr ? 'الذهاب إلى لوحة التحكم الرئيسية' : 'Go to Dashboard'}
+        </Button>
+        <Button variant="outline" onClick={() => onNavigate('/login')} className="w-full">
+          {isAr ? 'الانتقال إلى بوابة تسجيل الدخول' : 'Go to Login Portal'}
+        </Button>
+      </div>
     </div>
   );
 };

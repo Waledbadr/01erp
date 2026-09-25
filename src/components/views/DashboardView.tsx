@@ -34,6 +34,43 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const { t, language } = useI18n();
   const isAr = language === 'ar';
 
+  const [activeCompany, setActiveCompany] = React.useState<{
+    id?: string;
+    code?: string;
+    nameAr?: string;
+    nameEn?: string;
+    vatNumber?: string;
+    crNumber?: string;
+    onboardingStep?: number;
+    onboardingCompleted?: boolean;
+  } | null>(null);
+
+  const fetchActiveCompany = async () => {
+    try {
+      const token = localStorage.getItem('saudi_erp_session_token');
+      const res = await fetch('/api/v1/auth/me', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setActiveCompany(data.company || data.currentTenant || null);
+      }
+    } catch {
+      // fallback
+    }
+  };
+
+  React.useEffect(() => {
+    fetchActiveCompany();
+    const handleCompSwitched = () => {
+      fetchActiveCompany();
+    };
+    window.addEventListener('company-switched', handleCompSwitched);
+    return () => {
+      window.removeEventListener('company-switched', handleCompSwitched);
+    };
+  }, []);
+
   const pillars = [
     {
       id: 'gl',
@@ -144,6 +181,67 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         }
       />
+
+      {/* Active Company Showcase Banner */}
+      {activeCompany && (
+        <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 rounded-2xl p-6 text-white shadow-lg border border-emerald-800/40 relative overflow-hidden">
+          <div className="absolute top-0 end-0 p-8 opacity-10 pointer-events-none">
+            <Building2 className="w-48 h-48" />
+          </div>
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  {isAr ? 'بيئة العمل النشطة' : 'Active Company Tenant'}
+                </span>
+                <span className="font-mono text-xs text-slate-300 bg-white/10 px-2 py-0.5 rounded">
+                  {activeCompany.code || 'TNT-1001'}
+                </span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+                {isAr ? activeCompany.nameAr : (activeCompany.nameEn || activeCompany.nameAr)}
+              </h2>
+              {activeCompany.nameEn && isAr && (
+                <p className="text-xs text-emerald-200/80 font-medium">{activeCompany.nameEn}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-4 text-xs text-slate-300 pt-1">
+                {activeCompany.vatNumber && (
+                  <span className="flex items-center gap-1.5 font-mono">
+                    <span className="text-emerald-400 font-bold">{isAr ? 'الرقم الضريبي:' : 'VAT:'}</span>
+                    <span>{activeCompany.vatNumber}</span>
+                  </span>
+                )}
+                {activeCompany.crNumber && (
+                  <span className="flex items-center gap-1.5 font-mono">
+                    <span className="text-teal-400 font-bold">{isAr ? 'السجل التجاري:' : 'CR:'}</span>
+                    <span>{activeCompany.crNumber}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2 md:pt-0">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                onClick={() => onNavigate('/company-wizard')}
+                startIcon={<Building2 className="w-4 h-4" />}
+              >
+                {isAr ? 'إعدادات المنشأة والامتثال' : 'Company Settings'}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => onNavigate('/sales')}
+                startIcon={<Receipt className="w-4 h-4" />}
+              >
+                {isAr ? 'إصدار فاتورة جديدة' : 'New Invoice'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quick Metrics Bar */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

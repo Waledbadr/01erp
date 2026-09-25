@@ -560,6 +560,52 @@ export function suggestFifoAllocations(
   };
 }
 
+export interface CustomerPriceAgreement {
+  id: string;
+  tenantId: string;
+  customerId: string;
+  customerNameAr?: string;
+  customerNameEn?: string;
+  itemId: string;
+  itemCode?: string;
+  itemNameAr?: string;
+  itemNameEn?: string;
+  uomId: string;
+  uomNameAr: string;
+  uomNameEn?: string;
+  conversionFactor: number;
+  agreedPriceSar: number; // السعر المتفق عليه للوحدة
+  minQuantity?: number;
+  maxQuantity?: number;
+  fixedDiscountPercent?: number;
+  isStrictEnforced: boolean; // إلزام صارم بالسعر والوحدة المتفق عليهما
+  validFrom?: string;
+  validTo?: string;
+  status: 'ACTIVE' | 'EXPIRED' | 'SUSPENDED';
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function findMatchingPriceAgreement(
+  agreements: CustomerPriceAgreement[],
+  customerId: string,
+  itemId: string,
+  uomId?: string
+): CustomerPriceAgreement | undefined {
+  if (!customerId || !itemId || !agreements?.length) return undefined;
+  
+  const today = new Date().toISOString().slice(0, 10);
+  return agreements.find((a) => {
+    if (a.customerId !== customerId || a.itemId !== itemId) return false;
+    if (a.status !== 'ACTIVE') return false;
+    if (a.validFrom && a.validFrom > today) return false;
+    if (a.validTo && a.validTo < today) return false;
+    if (uomId && a.uomId && a.uomId !== uomId) return false;
+    return true;
+  });
+}
+
 /**
  * Generate ZATCA compliant TLV QR Code for an invoice (supporting Phase 1 and Phase 2)
  */

@@ -356,6 +356,57 @@ salesRouter.post('/quotations/:id/convert', requireAuth, requirePermission('sale
 });
 
 // =========================================================================
+// 4.1. CUSTOMER PRICE AGREEMENTS & CONTRACTED UNIT PRICING
+// =========================================================================
+
+salesRouter.get('/price-agreements', requireAuth, requirePermission('sales:invoice:view'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const customerId = req.query.customerId as string;
+    const agreements = req.tenantRepo!.getCustomerPriceAgreements(customerId);
+    res.json(agreements);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.get('/price-agreements/:id', requireAuth, requirePermission('sales:invoice:view'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const agreement = req.tenantRepo!.getCustomerPriceAgreementById(req.params.id);
+    if (!agreement) return res.status(404).json({ error: 'Price agreement not found' });
+    res.json(agreement);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.post('/price-agreements', requireAuth, requirePermission('sales:invoice:create'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const created = req.tenantRepo!.createCustomerPriceAgreement(req.body);
+    res.status(201).json(created);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.put('/price-agreements/:id', requireAuth, requirePermission('sales:invoice:create'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const updated = req.tenantRepo!.updateCustomerPriceAgreement(req.params.id, req.body);
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+salesRouter.delete('/price-agreements/:id', requireAuth, requirePermission('sales:invoice:create'), (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const deleted = req.tenantRepo!.deleteCustomerPriceAgreement(req.params.id);
+    res.json({ success: deleted });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// =========================================================================
 // 5. CREDIT NOTES & RETURNS (إشعارات دائنة ومردودات مبيعات)
 // =========================================================================
 

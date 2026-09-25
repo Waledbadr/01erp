@@ -47,3 +47,16 @@ All environment variables must be declared in `.env.example`. Secrets are inject
   - Verifies database connectivity, memory usage, and background job queue status.
   - Returns `200 OK` with JSON status payload.
 - **Graceful Shutdown**: Listens for `SIGTERM` and `SIGINT`, drains in-flight HTTP requests, closes active database connection pools, and flushes audit logs before process termination.
+
+---
+
+## 5. Vercel Deployment
+
+For deploying to Vercel (Front-end SPA / Static Hosting):
+1. **Repository**: Push/Export code to GitHub or GitLab.
+2. **Framework Preset**: `Vite`
+3. **Build Command**: `vite build`
+4. **Output Directory**: `dist`
+5. **Configuration**: Managed via `vercel.json` with SPA routing rewrite (`/*` -> `/index.html`).
+6. **Environment Variables**: Set any public or client variables (`VITE_*`) in the Vercel Project Dashboard.
+

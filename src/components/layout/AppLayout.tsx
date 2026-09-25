@@ -15,6 +15,7 @@ import {
   Building2,
   GitBranch,
   ChevronDown,
+  Plus,
   Menu,
   X,
   Palette,
@@ -31,9 +32,11 @@ import {
   Upload,
   CreditCard,
   ShieldAlert,
+  LogOut,
 } from 'lucide-react';
 import { useI18n } from '../../i18n/context.js';
 import { Badge } from '../ui/Badge.js';
+import { useToast } from '../ui/Toast.js';
 import { NotificationAPI, NotificationItem } from '../../lib/notifications.js';
 
 export interface AppLayoutProps {
@@ -48,13 +51,142 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onRouteChange,
 }) => {
   const { t, language, toggleLanguage, isAr } = useI18n();
+  const toast = useToast();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showCompanyMenu, setShowCompanyMenu] = useState(false);
   const [showBranchMenu, setShowBranchMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [unreadList, setUnreadList] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+
+  // Multi-Company State
+  const [userCompanies, setUserCompanies] = useState<Array<{ id: string; nameAr: string; nameEn?: string; code: string; isCurrent: boolean }>>([]);
+  const [currentCompanyName, setCurrentCompanyName] = useState<string>('');
+  const [isSwitchingCompany, setIsSwitchingCompany] = useState(false);
+
+  // Add Company Modal State
+  const [showAddCompanyModal, setShowAddCompanyModal] = useState(false);
+  const [newCompanyNameAr, setNewCompanyNameAr] = useState('');
+  const [newCompanyNameEn, setNewCompanyNameEn] = useState('');
+  const [newCompanyVat, setNewCompanyVat] = useState('');
+  const [newCompanyCr, setNewCompanyCr] = useState('');
+  const [isCreatingCompany, setIsCreatingCompany] = useState(false);
+
+  const fetchCompanyAndUserData = async () => {
+    try {
+      const token = localStorage.getItem('saudi_erp_session_token');
+      const res = await fetch('/api/v1/auth/me', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const activeComp = data.company || data.currentTenant;
+        if (activeComp) {
+          setCurrentCompanyName(isAr ? activeComp.nameAr : (activeComp.nameEn || activeComp.nameAr));
+        }
+        const comps = data.companies || data.accessibleTenants;
+        if (comps && Array.isArray(comps)) {
+          setUserCompanies(
+            comps.map((t: any) => ({
+              id: t.id,
+              nameAr: t.nameAr,
+              nameEn: t.nameEn,
+              code: t.code,
+              isCurrent: t.id === activeComp?.id,
+            }))
+          );
+        }
+      }
+    } catch {
+      // fallback
+    }
+  };
+
+  React.useEffect(() => {
+    fetchCompanyAndUserData();
+    const handleCompSwitched = () => {
+      fetchCompanyAndUserData();
+    };
+    window.addEventListener('company-switched', handleCompSwitched);
+    return () => {
+      window.removeEventListener('company-switched', handleCompSwitched);
+    };
+  }, [isAr, activeRoute]);
+
+  const handleSwitchCompany = async (targetTenantId: string) => {
+    setIsSwitchingCompany(true);
+    setShowCompanyMenu(false);
+    try {
+      const token = localStorage.getItem('saudi_erp_session_token');
+      const res = await fetch('/api/v1/auth/switch-company', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ targetCompanyId: targetTenantId, targetTenantId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(data.message || 'تم تبديل بيئة العمل بنجاح.');
+        await fetchCompanyAndUserData();
+        window.dispatchEvent(new CustomEvent('company-switched', { detail: { companyId: targetTenantId } }));
+        onRouteChange('/');
+      } else {
+        toast.error(data.message || 'فشل التبديل إلى المنشأة المختارة.');
+      }
+    } catch {
+      toast.error('حدث خطأ أثناء تبديل المنشأة.');
+    } finally {
+      setIsSwitchingCompany(false);
+    }
+  };
+
+  const handleCreateNewCompany = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCompanyNameAr.trim()) {
+      toast.error('يرجى إدخال اسم المنشأة بالعربية.');
+      return;
+    }
+
+    setIsCreatingCompany(true);
+    try {
+      const token = localStorage.getItem('saudi_erp_session_token');
+      const res = await fetch('/api/v1/auth/create-company', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          companyNameAr: newCompanyNameAr.trim(),
+          companyNameEn: newCompanyNameEn.trim() || newCompanyNameAr.trim(),
+          vatNumber: newCompanyVat.trim() || '300000000000003',
+          crNumber: newCompanyCr.trim() || `1010${Math.floor(100000 + Math.random() * 900000)}`,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        toast.success(data.message || 'تم إنشاء المنشأة الجديدة وتفعيلها بنجاح!');
+        setShowAddCompanyModal(false);
+        setNewCompanyNameAr('');
+        setNewCompanyNameEn('');
+        setNewCompanyVat('');
+        setNewCompanyCr('');
+        await fetchCompanyAndUserData();
+        onRouteChange('/company-wizard');
+      } else {
+        toast.error(data.message || 'فشل إنشاء المنشأة.');
+      }
+    } catch {
+      toast.error('حدث خطأ في الاتصال أثناء إنشاء المنشأة.');
+    } finally {
+      setIsCreatingCompany(false);
+    }
+  };
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -171,22 +303,64 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                   setShowCompanyMenu(!showCompanyMenu);
                   setShowBranchMenu(false);
                 }}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50/80 text-xs font-semibold text-slate-700 hover:bg-slate-100 min-h-[40px]"
+                disabled={isSwitchingCompany}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50/80 text-xs font-semibold text-slate-700 hover:bg-slate-100 min-h-[40px] transition"
               >
                 <Building2 className="w-3.5 h-3.5 text-emerald-700" />
-                <span className="max-w-[160px] truncate">{t.common.selectedCompany}</span>
+                <span className="max-w-[160px] truncate">
+                  {currentCompanyName || t.common.selectedCompany}
+                </span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
               {showCompanyMenu && (
-                <div className="absolute start-0 mt-1.5 w-64 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-50">
-                  <p className="text-[11px] font-bold text-slate-400 px-2 py-1 uppercase tracking-wider">{t.common.company}</p>
-                  <button
-                    onClick={() => setShowCompanyMenu(false)}
-                    className="w-full text-start px-2.5 py-2 rounded-lg text-xs font-medium text-emerald-800 bg-emerald-50/80 flex items-center justify-between"
-                  >
-                    <span>{t.common.selectedCompany}</span>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  </button>
+                <div className="absolute start-0 mt-1.5 w-72 rounded-xl border border-slate-200 bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95 duration-100">
+                  <div className="flex items-center justify-between px-2 py-1 border-b border-slate-100 mb-1">
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{t.common.company}</p>
+                    <span className="text-[10px] text-slate-400 font-mono">{userCompanies.length} منشأة</span>
+                  </div>
+
+                  <div className="max-h-56 overflow-y-auto space-y-1">
+                    {userCompanies.length > 0 ? (
+                      userCompanies.map((comp) => (
+                        <button
+                          key={comp.id}
+                          onClick={() => handleSwitchCompany(comp.id)}
+                          className={`w-full text-start px-2.5 py-2 rounded-lg text-xs font-medium flex items-center justify-between transition ${
+                            comp.isCurrent
+                              ? 'text-emerald-800 bg-emerald-50/90 font-bold border border-emerald-200/60'
+                              : 'text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          <div className="truncate me-2">
+                            <p className="truncate">{isAr ? comp.nameAr : (comp.nameEn || comp.nameAr)}</p>
+                            <p className="text-[10px] text-slate-400 font-mono">{comp.code}</p>
+                          </div>
+                          {comp.isCurrent && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />}
+                        </button>
+                      ))
+                    ) : (
+                      <button
+                        onClick={() => setShowCompanyMenu(false)}
+                        className="w-full text-start px-2.5 py-2 rounded-lg text-xs font-medium text-emerald-800 bg-emerald-50/80 flex items-center justify-between"
+                      >
+                        <span>{currentCompanyName || t.common.selectedCompany}</span>
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="pt-2 mt-1 border-t border-slate-100">
+                    <button
+                      onClick={() => {
+                        setShowCompanyMenu(false);
+                        setShowAddCompanyModal(true);
+                      }}
+                      className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50/60 hover:bg-emerald-100 border border-emerald-200 transition"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>{isAr ? '+ تسجيل / إضافة منشأة جديدة' : '+ Add New Company'}</span>
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -347,15 +521,66 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               )}
             </div>
 
-            {/* User Avatar Slot */}
-            <div className="hidden sm:flex items-center gap-2.5 ps-2 border-s border-slate-200">
-              <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center text-xs font-bold shadow-xs">
-                CFO
-              </div>
-              <div className="hidden lg:block text-start">
-                <p className="text-xs font-bold text-slate-800 leading-tight">عبدالله المطيري</p>
-                <p className="text-[10px] text-slate-500">{t.common.userRole}</p>
-              </div>
+            {/* User Avatar & Profile Menu */}
+            <div className="relative ps-2 border-s border-slate-200">
+              <button
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-slate-100 transition focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <div className="w-8 h-8 rounded-full bg-emerald-800 text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                  ADM
+                </div>
+                <div className="hidden lg:block text-start">
+                  <p className="text-xs font-bold text-slate-800 leading-tight">مسؤول المنشأة</p>
+                  <p className="text-[10px] text-slate-500">{isAr ? 'المالك / المدير العام' : 'Owner / Admin'}</p>
+                </div>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+              </button>
+
+              {showUserMenu && (
+                <div className="absolute end-0 mt-2 w-56 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl z-50 animate-in fade-in zoom-in-95">
+                  <div className="px-3 py-2 border-b border-slate-100 mb-1">
+                    <p className="text-xs font-bold text-slate-900">مسؤول النظام</p>
+                    <p className="text-[10px] text-slate-500 truncate">admin@company.com.sa</p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onRouteChange('/users');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-xl transition text-start"
+                  >
+                    <Users className="w-4 h-4 text-slate-400" />
+                    <span>{isAr ? 'إدارة المستخدمين والصلاحيات' : 'Users & RBAC'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      onRouteChange('/company-wizard');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-slate-50 rounded-xl transition text-start"
+                  >
+                    <Building2 className="w-4 h-4 text-slate-400" />
+                    <span>{isAr ? 'إعدادات المنشأة والمعالج' : 'Company Settings & Wizard'}</span>
+                  </button>
+
+                  <div className="my-1 border-t border-slate-100" />
+
+                  <button
+                    onClick={() => {
+                      setShowUserMenu(false);
+                      localStorage.removeItem('saudi_erp_session_token');
+                      onRouteChange('/login');
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition text-start"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-500" />
+                    <span>{isAr ? 'تسجيل الخروج' : 'Sign Out'}</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -524,6 +749,116 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           <span className="text-[10px] mt-0.5">{t.nav.roadmap}</span>
         </button>
       </nav>
+
+      {/* 4. MODAL: REGISTER / ADD NEW COMPANY */}
+      {showAddCompanyModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                  <Building2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">
+                    {isAr ? 'تسجيل وإضافة منشأة تجارية جديدة' : 'Register & Add New Company'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {isAr ? 'إنشاء بيئة سحابية جديدة مع دليل الحسابات السعودي المعتمد' : 'Create a fresh company workspace'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAddCompanyModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateNewCompany} className="mt-4 space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {isAr ? 'اسم المنشأة بالعربية (إلزامي)' : 'Company Name in Arabic (Required)'} *
+                </label>
+                <input
+                  type="text"
+                  value={newCompanyNameAr}
+                  onChange={(e) => setNewCompanyNameAr(e.target.value)}
+                  placeholder={isAr ? 'مثال: شركة الرواد للتجارة والمقاولات' : 'e.g. Al-Rowad Trading Co.'}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  {isAr ? 'اسم المنشأة بالإنجليزية (اختياري)' : 'Company Name in English (Optional)'}
+                </label>
+                <input
+                  type="text"
+                  value={newCompanyNameEn}
+                  onChange={(e) => setNewCompanyNameEn(e.target.value)}
+                  placeholder="e.g. Al-Rowad Trading & Contracting LLC"
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {isAr ? 'الرقم الضريبي (15 خانة)' : 'VAT Number (15 digits)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={newCompanyVat}
+                    onChange={(e) => setNewCompanyVat(e.target.value)}
+                    placeholder="300000000000003"
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {isAr ? 'السجل التجاري (10 خانات)' : 'CR Number (10 digits)'}
+                  </label>
+                  <input
+                    type="text"
+                    value={newCompanyCr}
+                    onChange={(e) => setNewCompanyCr(e.target.value)}
+                    placeholder="1010123456"
+                    className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddCompanyModal(false)}
+                  className="px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-100 border border-slate-200"
+                >
+                  {isAr ? 'إلغاء' : 'Cancel'}
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingCompany}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 shadow-sm transition disabled:opacity-50"
+                >
+                  {isCreatingCompany ? (
+                    <span>{isAr ? 'جاري الإنشاء...' : 'Creating...'}</span>
+                  ) : (
+                    <>
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>{isAr ? 'إنشاء المنشأة والبدء فوراً' : 'Create & Switch Now'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

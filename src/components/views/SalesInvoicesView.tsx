@@ -26,23 +26,30 @@ import {
   User,
   ShoppingBag,
   ExternalLink,
+  Tag,
+  Lock,
 } from 'lucide-react';
 import { useI18n } from '../../i18n/context.js';
 import {
   SalesInvoice,
   SalesQuotation,
   SalesCreditNote,
+  CustomerPriceAgreement,
   InvoiceType,
   PaymentMethod,
   CreditNoteReason,
   calculateInvoiceLine,
   calculateInvoiceTotals,
   roundHalalas,
+  findMatchingPriceAgreement,
 } from '../../lib/sales.js';
 import { InvoicePrintTemplate } from '../sales/InvoicePrintTemplate.js';
 import { ZatcaQRCode } from '../ui/ZatcaQRCode.js';
 import { DocumentActionModal } from '../documents/DocumentActionModal.js';
 import { DocumentDataPayload } from '../../lib/documents.js';
+import { CustomerPriceAgreementsTab } from '../sales/CustomerPriceAgreementsTab.js';
+import { CreatePriceAgreementModal } from '../sales/CreatePriceAgreementModal.js';
+import { QuotationDetailModal } from '../sales/QuotationDetailModal.js';
 
 interface SalesInvoicesViewProps {
   onNavigate?: (route: string) => void;
@@ -72,6 +79,7 @@ interface ItemOption {
   units: Array<{
     id: string;
     nameAr: string;
+    nameEn?: string;
     conversionFactor: number;
   }>;
 }
@@ -81,12 +89,13 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
   const isAr = language === 'ar';
 
   // Navigation tabs
-  const [activeTab, setActiveTab] = useState<'invoices' | 'quotations' | 'creditNotes'>('invoices');
+  const [activeTab, setActiveTab] = useState<'invoices' | 'quotations' | 'creditNotes' | 'priceAgreements'>('invoices');
 
   // Data states
   const [invoices, setInvoices] = useState<SalesInvoice[]>([]);
   const [quotations, setQuotations] = useState<SalesQuotation[]>([]);
   const [creditNotes, setCreditNotes] = useState<SalesCreditNote[]>([]);
+  const [priceAgreements, setPriceAgreements] = useState<CustomerPriceAgreement[]>([]);
   const [customers, setCustomers] = useState<CustomerOption[]>([]);
   const [items, setItems] = useState<ItemOption[]>([]);
   const [warehouses, setWarehouses] = useState<Array<{ id: string; nameAr: string }>>([]);
@@ -104,7 +113,9 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
   const [isCreateInvoiceOpen, setIsCreateInvoiceOpen] = useState<boolean>(false);
   const [isCreateQuotationOpen, setIsCreateQuotationOpen] = useState<boolean>(false);
   const [isCreateCreditNoteOpen, setIsCreateCreditNoteOpen] = useState<boolean>(false);
+  const [isCreateAgreementOpen, setIsCreateAgreementOpen] = useState<boolean>(false);
   const [viewingInvoice, setViewingInvoice] = useState<SalesInvoice | null>(null);
+  const [viewingQuotation, setViewingQuotation] = useState<SalesQuotation | null>(null);
   const [selectedInvoiceForCredit, setSelectedInvoiceForCredit] = useState<SalesInvoice | null>(null);
 
   // Form states: New Invoice
@@ -151,39 +162,75 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
     }>
   >([]);
 
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('saudi_erp_session_token') : null;
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  };
+
+  const parseJsonSafe = async <T,>(res: Response, fallback: T): Promise<T> => {
+    try {
+      const contentType = res.headers.get('content-type');
+      if (res.ok && contentType && contentType.includes('application/json')) {
+        return await res.json();
+      }
+      return fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
   // Fetch all initial data
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [invRes, quoteRes, cnRes, custRes, itemRes, whRes] = await Promise.all([
-        fetch('/api/v1/sales/invoices'),
-        fetch('/api/v1/sales/quotations'),
-        fetch('/api/v1/sales/credit-notes'),
-        fetch('/api/v1/parties/customers'),
-        fetch('/api/v1/inventory/items'),
-        fetch('/api/v1/inventory/warehouses'),
+      const headers = getAuthHeaders();
+      const [invRes, quoteRes, cnRes, paRes, custRes, itemRes, whRes] = await Promise.all([
+        fetch('/api/v1/sales/invoices', { headers }),
+        fetch('/api/v1/sales/quotations', { headers }),
+        fetch('/api/v1/sales/credit-notes', { headers }),
+        fetch('/api/v1/sales/price-agreements', { headers }),
+        fetch('/api/v1/sales/customers', { headers }),
+        fetch('/api/v1/inventory/items', { headers }),
+        fetch('/api/v1/inventory/warehouses', { headers }),
       ]);
 
-      if (invRes.ok) setInvoices(await invRes.json());
-      if (quoteRes.ok) setQuotations(await quoteRes.json());
-      if (cnRes.ok) setCreditNotes(await cnRes.json());
-      if (custRes.ok) {
-        const custData = await custRes.json();
-        setCustomers(custData);
-        if (custData.length > 0 && !selectedCustomerId) {
-          setSelectedCustomerId(custData[0].id);
-          setQuoteCustomerId(custData[0].id);
+      const invData = await parseJsonSafe<SalesInvoice[]>(invRes, []);
+      setInvoices(Array.isArray(invData) ? invData : []);
+
+      const quoteData = await parseJsonSafe<SalesQuotation[]>(quoteRes, []);
+      setQuotations(Array.isArray(quoteData) ? quoteData : []);
+
+      const cnData = await parseJsonSafe<SalesCreditNote[]>(cnRes, []);
+      setCreditNotes(Array.isArray(cnData) ? cnData : []);
+
+      const paData = await parseJsonSafe<CustomerPriceAgreement[]>(paRes, []);
+      setPriceAgreements(Array.isArray(paData) ? paData : []);
+
+      const custData = await parseJsonSafe<any>(custRes, null);
+      if (custData) {
+        const custList: CustomerOption[] = Array.isArray(custData) ? custData : (custData?.customers || []);
+        setCustomers(custList);
+        if (custList.length > 0 && !selectedCustomerId) {
+          setSelectedCustomerId(custList[0].id);
+          setQuoteCustomerId(custList[0].id);
         }
       }
-      if (itemRes.ok) {
-        const itemData = await itemRes.json();
-        setItems(itemData);
+
+      const itemData = await parseJsonSafe<any>(itemRes, null);
+      if (itemData) {
+        const itemList: ItemOption[] = Array.isArray(itemData) ? itemData : (itemData?.items || []);
+        setItems(itemList);
       }
-      if (whRes.ok) {
-        const whData = await whRes.json();
-        setWarehouses(whData);
-        if (whData.length > 0 && !selectedWarehouseId) {
-          setSelectedWarehouseId(whData[0].id);
+
+      const whData = await parseJsonSafe<any>(whRes, null);
+      if (whData) {
+        const whList: Array<{ id: string; nameAr: string }> = Array.isArray(whData) ? whData : (whData?.warehouses || []);
+        setWarehouses(whList);
+        if (whList.length > 0 && !selectedWarehouseId) {
+          setSelectedWarehouseId(whList[0].id);
         }
       }
     } catch (err) {
@@ -318,24 +365,138 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
     setInvoiceLines((prev) => prev.filter((_, i) => i !== idx));
   };
 
-  // Update line field
+  // Update invoice line field with strict customer price agreement lookup
   const handleUpdateInvoiceLine = (idx: number, field: string, val: any) => {
     setInvoiceLines((prev) => {
       const copy = [...prev];
       const target = { ...copy[idx], [field]: val };
 
-      // If item changed, refresh prices & units
+      // If item changed, refresh prices & units according to Customer Price Agreements
       if (field === 'itemId') {
         const found = items.find((i) => i.id === val);
         if (found) {
-          target.uomId = found.units[0]?.id || 'unit-base';
-          target.unitPriceSar = newInvoiceType === 'STANDARD_B2B' ? (found.wholesalePrice || found.sellingPrice) : found.sellingPrice;
+          const agreement = findMatchingPriceAgreement(priceAgreements, selectedCustomerId, val);
+          if (agreement) {
+            target.uomId = agreement.uomId;
+            target.unitPriceSar = agreement.agreedPriceSar;
+            target.discountPercent = agreement.fixedDiscountPercent || 0;
+          } else {
+            target.uomId = found.units[0]?.id || 'unit-base';
+            target.unitPriceSar = newInvoiceType === 'STANDARD_B2B' ? (found.wholesalePrice || found.sellingPrice) : found.sellingPrice;
+          }
           target.taxRate = found.taxRate || 15;
         }
       }
       copy[idx] = target;
       return copy;
     });
+  };
+
+  // Quotation line helpers with price agreement lookup
+  const handleAddQuoteLine = () => {
+    if (items.length === 0) return;
+    const it = items[0];
+    const agreement = findMatchingPriceAgreement(priceAgreements, quoteCustomerId, it.id);
+    setQuoteLines((prev) => [
+      ...prev,
+      {
+        itemId: it.id,
+        uomId: agreement?.uomId || it.units[0]?.id || 'unit-base',
+        quantity: 1,
+        unitPriceSar: agreement ? agreement.agreedPriceSar : (it.wholesalePrice || it.sellingPrice),
+        discountPercent: agreement?.fixedDiscountPercent || 0,
+      },
+    ]);
+  };
+
+  const handleRemoveQuoteLine = (idx: number) => {
+    if (quoteLines.length <= 1) return;
+    setQuoteLines((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleUpdateQuoteLine = (idx: number, field: string, val: any) => {
+    setQuoteLines((prev) => {
+      const copy = [...prev];
+      const target = { ...copy[idx], [field]: val };
+
+      if (field === 'itemId') {
+        const found = items.find((i) => i.id === val);
+        if (found) {
+          const agreement = findMatchingPriceAgreement(priceAgreements, quoteCustomerId, val);
+          if (agreement) {
+            target.uomId = agreement.uomId;
+            target.unitPriceSar = agreement.agreedPriceSar;
+            target.discountPercent = agreement.fixedDiscountPercent || 0;
+          } else {
+            target.uomId = found.units[0]?.id || 'unit-base';
+            target.unitPriceSar = found.wholesalePrice || found.sellingPrice;
+          }
+        }
+      }
+      copy[idx] = target;
+      return copy;
+    });
+  };
+
+  // Sync quotation customer change to re-evaluate prices
+  const handleQuoteCustomerChange = (newCustId: string) => {
+    setQuoteCustomerId(newCustId);
+    setQuoteLines((prev) =>
+      prev.map((l) => {
+        const it = items.find((i) => i.id === l.itemId);
+        const agreement = findMatchingPriceAgreement(priceAgreements, newCustId, l.itemId);
+        if (agreement) {
+          return {
+            ...l,
+            uomId: agreement.uomId,
+            unitPriceSar: agreement.agreedPriceSar,
+            discountPercent: agreement.fixedDiscountPercent || 0,
+          };
+        }
+        return l;
+      })
+    );
+  };
+
+  // Sync invoice customer change to re-evaluate prices
+  const handleInvoiceCustomerChange = (newCustId: string) => {
+    setSelectedCustomerId(newCustId);
+    setInvoiceLines((prev) =>
+      prev.map((l) => {
+        const it = items.find((i) => i.id === l.itemId);
+        const agreement = findMatchingPriceAgreement(priceAgreements, newCustId, l.itemId);
+        if (agreement) {
+          return {
+            ...l,
+            uomId: agreement.uomId,
+            unitPriceSar: agreement.agreedPriceSar,
+            discountPercent: agreement.fixedDiscountPercent || 0,
+          };
+        }
+        return l;
+      })
+    );
+  };
+
+  // Delete Price Agreement
+  const handleDeleteAgreement = async (id: string) => {
+    try {
+      const res = await fetch(`/api/v1/sales/price-agreements/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to delete agreement');
+      }
+      setPriceAgreements((prev) => prev.filter((a) => a.id !== id));
+      setFeedback({
+        type: 'success',
+        message: isAr ? 'تم حذف اتفاقية التسعير بنجاح' : 'Price agreement deleted successfully',
+      });
+    } catch (err: any) {
+      setFeedback({ type: 'error', message: err.message || 'Error deleting agreement' });
+    }
   };
 
   // Submit create invoice
@@ -370,7 +531,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
 
       const res = await fetch('/api/v1/sales/invoices', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       });
 
@@ -401,9 +562,12 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
   const handlePostInvoice = async (inv: SalesInvoice) => {
     try {
       setActionLoading(true);
-      const res = await fetch(`/api/v1/sales/invoices/${inv.id}/post`, { method: 'POST' });
+      const res = await fetch(`/api/v1/sales/invoices/${inv.id}/post`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to post invoice');
       }
       const updated: SalesInvoice = await res.json();
@@ -463,12 +627,12 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
 
       const res = await fetch('/api/v1/sales/credit-notes', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to create credit note');
       }
 
@@ -508,12 +672,12 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
 
       const res = await fetch('/api/v1/sales/quotations', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to create quotation');
       }
 
@@ -538,9 +702,12 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
   const handleConvertQuotation = async (quote: SalesQuotation) => {
     try {
       setActionLoading(true);
-      const res = await fetch(`/api/v1/sales/quotations/${quote.id}/convert`, { method: 'POST' });
+      const res = await fetch(`/api/v1/sales/quotations/${quote.id}/convert`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+      });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to convert quotation');
       }
       const inv: SalesInvoice = await res.json();
@@ -733,11 +900,11 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
       </div>
 
       {/* Tabs Row */}
-      <div className="flex items-center gap-2 border-b border-slate-200">
+      <div className="flex items-center gap-2 border-b border-slate-200 overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab('invoices')}
-          className={`pb-3 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`pb-3 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'invoices'
               ? 'border-emerald-700 text-emerald-800'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -753,7 +920,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
         <button
           type="button"
           onClick={() => setActiveTab('quotations')}
-          className={`pb-3 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`pb-3 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'quotations'
               ? 'border-emerald-700 text-emerald-800'
               : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -769,16 +936,32 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
         <button
           type="button"
           onClick={() => setActiveTab('creditNotes')}
-          className={`pb-3 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 ${
+          className={`pb-3 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'creditNotes'
               ? 'border-emerald-700 text-emerald-800'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
           <ArrowDownLeft className="w-4 h-4" />
-          <span>{isAr ? 'الإشعارات الدائنة (المردودات)' : 'Credit Notes & Returns'}</span>
+          <span>{isAr ? 'الإشعارات الدائنة' : 'Credit Notes'}</span>
           <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-slate-100 text-slate-700">
             {creditNotes.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('priceAgreements')}
+          className={`pb-3 px-3 text-xs font-bold border-b-2 transition-colors flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'priceAgreements'
+              ? 'border-emerald-700 text-emerald-800'
+              : 'border-transparent text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          <Tag className="w-4 h-4 text-emerald-700" />
+          <span>{isAr ? 'قوائم الأسعار والاتفاقيات (حسب العميل)' : 'Customer Price Agreements'}</span>
+          <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-bold">
+            {priceAgreements.length}
           </span>
         </button>
       </div>
@@ -1055,21 +1238,33 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                         )}
                       </td>
                       <td className="p-3 text-center">
-                        {quote.status !== 'CONVERTED' ? (
+                        <div className="flex items-center justify-center gap-1.5">
+                          {/* View Quotation Details */}
                           <button
                             type="button"
-                            onClick={() => handleConvertQuotation(quote)}
-                            disabled={actionLoading}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-md transition-colors"
+                            onClick={() => setViewingQuotation(quote)}
+                            className="p-1.5 text-slate-600 hover:text-emerald-700 hover:bg-slate-100 rounded-md transition-colors"
+                            title={isAr ? 'عرض تفاصيل وبنود العرض' : 'View Quotation Details'}
                           >
-                            <Sparkles className="w-3 h-3 text-emerald-700" />
-                            <span>{isAr ? 'تحويل لفاتورة' : 'Convert to Invoice'}</span>
+                            <Eye className="w-4 h-4" />
                           </button>
-                        ) : (
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {quote.convertedInvoiceNumber}
-                          </span>
-                        )}
+
+                          {quote.status !== 'CONVERTED' ? (
+                            <button
+                              type="button"
+                              onClick={() => handleConvertQuotation(quote)}
+                              disabled={actionLoading}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-md transition-colors"
+                            >
+                              <Sparkles className="w-3 h-3 text-emerald-700" />
+                              <span>{isAr ? 'تحويل لفاتورة' : 'Convert to Invoice'}</span>
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {quote.convertedInvoiceNumber}
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -1152,6 +1347,20 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
       )}
 
       {/* ========================================================= */}
+      {/* TAB 4: CUSTOMER PRICE AGREEMENTS */}
+      {/* ========================================================= */}
+      {activeTab === 'priceAgreements' && (
+        <CustomerPriceAgreementsTab
+          agreements={priceAgreements}
+          customers={customers}
+          items={items}
+          onOpenCreate={() => setIsCreateAgreementOpen(true)}
+          onRefresh={fetchData}
+          onDeleteAgreement={handleDeleteAgreement}
+        />
+      )}
+
+      {/* ========================================================= */}
       {/* MODAL: CREATE SALES INVOICE */}
       {/* ========================================================= */}
       {isCreateInvoiceOpen && (
@@ -1220,7 +1429,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                   </label>
                   <select
                     value={selectedCustomerId}
-                    onChange={(e) => setSelectedCustomerId(e.target.value)}
+                    onChange={(e) => handleInvoiceCustomerChange(e.target.value)}
                     className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-800"
                     required
                   >
@@ -1303,9 +1512,9 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                   <thead className="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
                     <tr>
                       <th className="p-2 text-start w-48">{isAr ? 'الصنف' : 'Item'}</th>
-                      <th className="p-2 text-start w-28">{isAr ? 'الوحدة' : 'Unit'}</th>
+                      <th className="p-2 text-start w-32">{isAr ? 'الوحدة' : 'Unit'}</th>
                       <th className="p-2 text-center w-20">{isAr ? 'الكمية' : 'Qty'}</th>
-                      <th className="p-2 text-end w-24">{isAr ? 'السعر (﷼)' : 'Price'}</th>
+                      <th className="p-2 text-end w-28">{isAr ? 'السعر (﷼)' : 'Price'}</th>
                       <th className="p-2 text-center w-20">{isAr ? 'خصم %' : 'Disc %'}</th>
                       <th className="p-2 text-end w-24">{isAr ? 'الخاضع' : 'Taxable'}</th>
                       <th className="p-2 text-end w-24">{isAr ? 'الضريبة 15%' : 'VAT'}</th>
@@ -1317,6 +1526,8 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                     {invoiceLines.map((line, idx) => {
                       const it = items.find((i) => i.id === line.itemId);
                       const uom = it?.units.find((u) => u.id === line.uomId) || it?.units[0];
+                      const agreement = findMatchingPriceAgreement(priceAgreements, selectedCustomerId, line.itemId);
+                      const isStrict = agreement?.isStrictEnforced || false;
                       const calc = calculateInvoiceLine({
                         quantity: line.quantity,
                         unitPriceSar: line.unitPriceSar,
@@ -1326,7 +1537,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                       });
 
                       return (
-                        <tr key={idx} className="hover:bg-slate-50/50">
+                        <tr key={idx} className={`hover:bg-slate-50/50 ${agreement ? 'bg-amber-50/20' : ''}`}>
                           {/* Item Picker */}
                           <td className="p-2">
                             <select
@@ -1340,21 +1551,44 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                                 </option>
                               ))}
                             </select>
+                            {agreement && (
+                              <div className="flex items-center gap-1 mt-1 text-[10px] text-amber-700">
+                                <Tag className="w-3 h-3 text-amber-600" />
+                                <span>{agreement.notes || (isAr ? `اتفاقية (${agreement.uomNameAr})` : `Agreement (${agreement.uomNameAr})`)}</span>
+                                {isStrict && (
+                                  <span className="inline-flex items-center gap-0.5 px-1 py-0.2 bg-amber-100 text-amber-900 rounded font-bold">
+                                    <Lock className="w-2.5 h-2.5" />
+                                    {isAr ? 'سعر ووحدة معتمدة' : 'Enforced'}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </td>
 
                           {/* Unit (UOM) */}
                           <td className="p-2">
-                            <select
-                              value={line.uomId}
-                              onChange={(e) => handleUpdateInvoiceLine(idx, 'uomId', e.target.value)}
-                              className="w-full p-1.5 bg-white border border-slate-300 rounded text-xs"
-                            >
-                              {it?.units.map((u) => (
-                                <option key={u.id} value={u.id}>
-                                  {u.nameAr} ({u.conversionFactor}x)
-                                </option>
-                              ))}
-                            </select>
+                            <div className="relative">
+                              <select
+                                value={line.uomId}
+                                onChange={(e) => handleUpdateInvoiceLine(idx, 'uomId', e.target.value)}
+                                disabled={isStrict}
+                                className={`w-full p-1.5 border rounded text-xs ${
+                                  isStrict
+                                    ? 'bg-slate-100 text-slate-700 border-amber-300 cursor-not-allowed font-medium'
+                                    : 'bg-white border-slate-300'
+                                }`}
+                                title={isStrict ? (isAr ? 'الوحدة معتمدة ومقفلة في اتفاقية تسعير العميل' : 'Unit locked by customer price agreement') : undefined}
+                              >
+                                {it?.units.map((u) => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.nameAr} ({u.conversionFactor}x)
+                                  </option>
+                                ))}
+                              </select>
+                              {isStrict && (
+                                <Lock className="w-3 h-3 text-amber-600 absolute end-2 top-2.5 pointer-events-none" />
+                              )}
+                            </div>
                           </td>
 
                           {/* Quantity */}
@@ -1372,15 +1606,27 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
 
                           {/* Unit Price */}
                           <td className="p-2 text-end">
-                            <input
-                              type="number"
-                              min="0"
-                              step="0.01"
-                              value={line.unitPriceSar}
-                              onChange={(e) => handleUpdateInvoiceLine(idx, 'unitPriceSar', parseFloat(e.target.value) || 0)}
-                              className="w-20 p-1.5 text-end font-mono bg-white border border-slate-300 rounded text-xs"
-                              required
-                            />
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={line.unitPriceSar}
+                                onChange={(e) => handleUpdateInvoiceLine(idx, 'unitPriceSar', parseFloat(e.target.value) || 0)}
+                                disabled={isStrict}
+                                readOnly={isStrict}
+                                className={`w-24 p-1.5 text-end font-mono border rounded text-xs ${
+                                  isStrict
+                                    ? 'bg-amber-50 text-amber-900 border-amber-300 font-bold cursor-not-allowed'
+                                    : 'bg-white border-slate-300'
+                                }`}
+                                title={isStrict ? (isAr ? 'السعر معتمد ومقفل في اتفاقية تسعير العميل' : 'Price locked by customer price agreement') : undefined}
+                                required
+                              />
+                              {isStrict && (
+                                <Lock className="w-3 h-3 text-amber-600 absolute start-1.5 top-2.5 pointer-events-none" />
+                              )}
+                            </div>
                           </td>
 
                           {/* Discount % */}
@@ -1392,7 +1638,12 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                               step="0.5"
                               value={line.discountPercent}
                               onChange={(e) => handleUpdateInvoiceLine(idx, 'discountPercent', parseFloat(e.target.value) || 0)}
-                              className="w-14 p-1.5 text-center font-mono bg-white border border-slate-300 rounded text-xs"
+                              disabled={isStrict && (agreement?.fixedDiscountPercent !== undefined && agreement.fixedDiscountPercent > 0)}
+                              className={`w-14 p-1.5 text-center font-mono border rounded text-xs ${
+                                isStrict && agreement?.fixedDiscountPercent
+                                  ? 'bg-amber-50 text-amber-900 border-amber-300'
+                                  : 'bg-white border-slate-300'
+                              }`}
                             />
                           </td>
 
@@ -1673,7 +1924,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                   </label>
                   <select
                     value={quoteCustomerId}
-                    onChange={(e) => setQuoteCustomerId(e.target.value)}
+                    onChange={(e) => handleQuoteCustomerChange(e.target.value)}
                     className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800"
                     required
                   >
@@ -1701,84 +1952,169 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
 
               {/* Lines preview */}
               <div className="border border-slate-200 rounded-xl overflow-hidden">
+                <div className="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
+                  <h4 className="font-bold text-slate-800">
+                    {isAr ? 'بنود عرض السعر (المنتجات والوحدات)' : 'Quotation Line Items'}
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={handleAddQuoteLine}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-md transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{isAr ? 'إضافة بند' : 'Add Item'}</span>
+                  </button>
+                </div>
+
                 <table className="w-full text-xs">
                   <thead className="bg-slate-100 text-slate-700 font-semibold">
                     <tr>
-                      <th className="p-2 text-start">{isAr ? 'الصنف' : 'Item'}</th>
-                      <th className="p-2 text-center w-24">{isAr ? 'الكمية' : 'Qty'}</th>
+                      <th className="p-2 text-start w-44">{isAr ? 'الصنف' : 'Item'}</th>
+                      <th className="p-2 text-start w-32">{isAr ? 'الوحدة' : 'Unit'}</th>
+                      <th className="p-2 text-center w-20">{isAr ? 'الكمية' : 'Qty'}</th>
                       <th className="p-2 text-end w-28">{isAr ? 'السعر (﷼)' : 'Price'}</th>
                       <th className="p-2 text-center w-20">{isAr ? 'خصم %' : 'Disc %'}</th>
+                      <th className="p-2 text-end w-28">{isAr ? 'الإجمالي' : 'Total'}</th>
+                      <th className="p-2 text-center w-10"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {quoteLines.map((line, idx) => (
-                      <tr key={idx}>
-                        <td className="p-2">
-                          <select
-                            value={line.itemId}
-                            onChange={(e) => {
-                              const it = items.find((i) => i.id === e.target.value);
-                              setQuoteLines((prev) =>
-                                prev.map((l, i) =>
-                                  i === idx
-                                    ? {
-                                        ...l,
-                                        itemId: e.target.value,
-                                        unitPriceSar: it?.wholesalePrice || it?.sellingPrice || 15,
-                                      }
-                                    : l
-                                )
-                              );
-                            }}
-                            className="w-full p-1.5 bg-white border border-slate-300 rounded"
-                          >
-                            {items.map((it) => (
-                              <option key={it.id} value={it.id}>
-                                {it.nameAr}
-                              </option>
-                            ))}
-                          </select>
-                        </td>
-                        <td className="p-2 text-center">
-                          <input
-                            type="number"
-                            min="1"
-                            value={line.quantity}
-                            onChange={(e) => {
-                              const v = parseFloat(e.target.value) || 1;
-                              setQuoteLines((prev) => prev.map((l, i) => (i === idx ? { ...l, quantity: v } : l)));
-                            }}
-                            className="w-20 p-1 text-center font-mono bg-white border border-slate-300 rounded"
-                          />
-                        </td>
-                        <td className="p-2 text-end">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={line.unitPriceSar}
-                            onChange={(e) => {
-                              const v = parseFloat(e.target.value) || 0;
-                              setQuoteLines((prev) => prev.map((l, i) => (i === idx ? { ...l, unitPriceSar: v } : l)));
-                            }}
-                            className="w-24 p-1 text-end font-mono bg-white border border-slate-300 rounded"
-                          />
-                        </td>
-                        <td className="p-2 text-center">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={line.discountPercent}
-                            onChange={(e) => {
-                              const v = parseFloat(e.target.value) || 0;
-                              setQuoteLines((prev) => prev.map((l, i) => (i === idx ? { ...l, discountPercent: v } : l)));
-                            }}
-                            className="w-16 p-1 text-center font-mono bg-white border border-slate-300 rounded"
-                          />
-                        </td>
-                      </tr>
-                    ))}
+                    {quoteLines.map((line, idx) => {
+                      const it = items.find((i) => i.id === line.itemId);
+                      const agreement = findMatchingPriceAgreement(priceAgreements, quoteCustomerId, line.itemId);
+                      const isStrict = agreement?.isStrictEnforced || false;
+                      const lineTotal = (Number(line.quantity) || 0) * (Number(line.unitPriceSar) || 0) * (1 - (Number(line.discountPercent) || 0) / 100);
+
+                      return (
+                        <tr key={idx} className={`hover:bg-slate-50/50 ${agreement ? 'bg-amber-50/20' : ''}`}>
+                          {/* Item */}
+                          <td className="p-2">
+                            <select
+                              value={line.itemId}
+                              onChange={(e) => handleUpdateQuoteLine(idx, 'itemId', e.target.value)}
+                              className="w-full p-1.5 bg-white border border-slate-300 rounded text-xs"
+                            >
+                              {items.map((itemOption) => (
+                                <option key={itemOption.id} value={itemOption.id}>
+                                  {itemOption.nameAr}
+                                </option>
+                              ))}
+                            </select>
+                            {agreement && (
+                              <div className="flex items-center gap-1 mt-1 text-[10px] text-amber-700">
+                                <Tag className="w-3 h-3 text-amber-600" />
+                                <span>{agreement.notes || (isAr ? `اتفاقية (${agreement.uomNameAr})` : `Agreement (${agreement.uomNameAr})`)}</span>
+                                {isStrict && (
+                                  <span className="inline-flex items-center gap-0.5 px-1 py-0.2 bg-amber-100 text-amber-900 rounded font-bold">
+                                    <Lock className="w-2.5 h-2.5" />
+                                    {isAr ? 'سعر ووحدة معتمدة' : 'Enforced'}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </td>
+
+                          {/* Unit */}
+                          <td className="p-2">
+                            <div className="relative">
+                              <select
+                                value={line.uomId}
+                                onChange={(e) => handleUpdateQuoteLine(idx, 'uomId', e.target.value)}
+                                disabled={isStrict}
+                                className={`w-full p-1.5 border rounded text-xs ${
+                                  isStrict
+                                    ? 'bg-slate-100 text-slate-700 border-amber-300 cursor-not-allowed font-medium'
+                                    : 'bg-white border-slate-300'
+                                }`}
+                                title={isStrict ? (isAr ? 'الوحدة معتمدة ومقفلة في اتفاقية تسعير العميل' : 'Unit locked by price agreement') : undefined}
+                              >
+                                {it?.units.map((u) => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.nameAr} ({u.conversionFactor}x)
+                                  </option>
+                                ))}
+                              </select>
+                              {isStrict && (
+                                <Lock className="w-3 h-3 text-amber-600 absolute end-2 top-2.5 pointer-events-none" />
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Quantity */}
+                          <td className="p-2 text-center">
+                            <input
+                              type="number"
+                              min="0.01"
+                              step="any"
+                              value={line.quantity}
+                              onChange={(e) => handleUpdateQuoteLine(idx, 'quantity', parseFloat(e.target.value) || 0)}
+                              className="w-16 p-1.5 text-center font-mono font-bold bg-white border border-slate-300 rounded text-xs"
+                              required
+                            />
+                          </td>
+
+                          {/* Price */}
+                          <td className="p-2 text-end">
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={line.unitPriceSar}
+                                onChange={(e) => handleUpdateQuoteLine(idx, 'unitPriceSar', parseFloat(e.target.value) || 0)}
+                                disabled={isStrict}
+                                readOnly={isStrict}
+                                className={`w-24 p-1.5 text-end font-mono border rounded text-xs ${
+                                  isStrict
+                                    ? 'bg-amber-50 text-amber-900 border-amber-300 font-bold cursor-not-allowed'
+                                    : 'bg-white border-slate-300'
+                                }`}
+                                title={isStrict ? (isAr ? 'السعر معتمد ومقفل في اتفاقية تسعير العميل' : 'Price locked by price agreement') : undefined}
+                                required
+                              />
+                              {isStrict && (
+                                <Lock className="w-3 h-3 text-amber-600 absolute start-1.5 top-2.5 pointer-events-none" />
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Discount % */}
+                          <td className="p-2 text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              step="0.5"
+                              value={line.discountPercent}
+                              onChange={(e) => handleUpdateQuoteLine(idx, 'discountPercent', parseFloat(e.target.value) || 0)}
+                              disabled={isStrict && (agreement?.fixedDiscountPercent !== undefined && agreement.fixedDiscountPercent > 0)}
+                              className={`w-14 p-1.5 text-center font-mono border rounded text-xs ${
+                                isStrict && agreement?.fixedDiscountPercent
+                                  ? 'bg-amber-50 text-amber-900 border-amber-300'
+                                  : 'bg-white border-slate-300'
+                              }`}
+                            />
+                          </td>
+
+                          {/* Line Total */}
+                          <td className="p-2 text-end font-mono font-bold text-slate-900">
+                            {lineTotal.toFixed(2)} ﷼
+                          </td>
+
+                          {/* Remove */}
+                          <td className="p-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveQuoteLine(idx)}
+                              disabled={quoteLines.length <= 1}
+                              className="text-slate-400 hover:text-rose-600 disabled:opacity-30"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1802,6 +2138,39 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
             </form>
           </div>
         </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: CUSTOMER PRICE AGREEMENT CREATOR */}
+      {/* ========================================================= */}
+      <CreatePriceAgreementModal
+        isOpen={isCreateAgreementOpen}
+        onClose={() => setIsCreateAgreementOpen(false)}
+        customers={customers}
+        items={items}
+        onCreated={() => {
+          setIsCreateAgreementOpen(false);
+          fetchData();
+          setFeedback({
+            type: 'success',
+            message: isAr ? 'تم حفظ اتفاقية التسعير والوحدات للعميل بنجاح' : 'Price agreement saved successfully',
+          });
+        }}
+      />
+
+      {/* ========================================================= */}
+      {/* MODAL: QUOTATION FULL DETAILS & LINES */}
+      {/* ========================================================= */}
+      {viewingQuotation && (
+        <QuotationDetailModal
+          quotation={viewingQuotation}
+          onClose={() => setViewingQuotation(null)}
+          onConvertToInvoice={(q) => {
+            setViewingQuotation(null);
+            handleConvertQuotation(q);
+          }}
+          actionLoading={actionLoading}
+        />
       )}
 
       {/* ========================================================= */}

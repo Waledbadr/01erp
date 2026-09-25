@@ -171,17 +171,31 @@ async function startServer() {
 
   // 7. Modular API Routes
   app.use('/api/v1/auth', authRouter);
+  app.use('/api/auth', authRouter);
   app.use('/api/v1/company', companyRouter);
+  app.use('/api/company', companyRouter);
   app.use('/api/v1/users', usersRouter);
+  app.use('/api/users', usersRouter);
   app.use('/api/v1/superadmin', superadminRouter);
+  app.use('/api/superadmin', superadminRouter);
   app.use('/api/v1/billing', billingRouter);
   app.use('/api/billing', billingRouter);
   app.use('/api/v1/audit', auditRouter);
+  app.use('/api/audit', auditRouter);
   app.use('/api/v1/core', coreRouter);
+  app.use('/api/core', coreRouter);
   app.use('/api/v1/accounting', accountingRouter);
+  app.use('/api/accounting', accountingRouter);
   app.use('/api/v1/inventory', inventoryRouter);
+  app.use('/api/inventory', inventoryRouter);
   app.use('/api/v1/sales', salesRouter);
+  app.use('/api/sales', salesRouter);
   app.use('/api/v1/purchasing', purchasingRouter);
+  app.use('/api/purchasing', purchasingRouter);
+  app.use('/api/v1/parties/customers', salesRouter);
+  app.use('/api/parties/customers', salesRouter);
+  app.use('/api/v1/parties/suppliers', purchasingRouter);
+  app.use('/api/parties/suppliers', purchasingRouter);
   app.use('/api/v1/treasury', treasuryRouter);
   app.use('/api/treasury', treasuryRouter);
   app.use('/api/v1/zatca', zatcaRouter);
@@ -191,8 +205,11 @@ async function startServer() {
   app.use('/api/v1/assets', assetsRouter);
   app.use('/api/assets', assetsRouter);
   app.use('/api/v1/security', securityRouter);
+  app.use('/api/security', securityRouter);
   app.use('/api/v1/backups', backupsRouter);
+  app.use('/api/backups', backupsRouter);
   app.use('/api/v1/system/backups', backupsRouter);
+  app.use('/api/system/backups', backupsRouter);
   app.use('/api/v1/reports', reportsRouter);
   app.use('/api/reports', reportsRouter);
   app.use('/api/v1/documents', documentsRouter);
@@ -211,6 +228,15 @@ async function startServer() {
   app.use('/api', integrationsRouter);
   app.use('/api/v1/import-export', importExportRouter);
   app.use('/api/import-export', importExportRouter);
+
+  // 8. API 404 Catch-All: Always return JSON for unhandled /api/* paths
+  app.all('/api/*', (req: Request, res: Response) => {
+    res.status(404).json({
+      error: 'API_ENDPOINT_NOT_FOUND',
+      message: `The endpoint ${req.method} ${req.originalUrl} was not found on this server.`,
+      path: req.originalUrl,
+    });
+  });
 
   // 6. Global API Error Handler
   app.use('/api/*', (err: Error, req: Request, res: Response, _next: NextFunction) => {

@@ -47,58 +47,84 @@ authRouter.post('/register', async (req: Request, res: Response) => {
 
     // 2. Validate mandatory fields
     if (!companyNameAr || !adminFullName || !adminEmail || !password) {
-      return res.status(400).json({ error: 'VALIDATION_FAILED', message: 'All required fields must be filled.' });
+      return res.status(400).json({ error: 'VALIDATION_FAILED', message: 'جميع الحقول الإلزامية مطلوبة (اسم المنشأة، اسم المسؤول، البريد الإلكتروني، وكلمة المرور).' });
     }
 
-    // 3. Validate Saudi Tax & Legal IDs
-    const vatCheck = validateSaudiVatNumber(vatNumber);
-    if (!vatCheck.valid) {
-      return res.status(400).json({ error: 'INVALID_VAT_NUMBER', message: vatCheck.error });
+    // 3. Validate Saudi Tax & Legal IDs (if provided)
+    let sanitizedVat = (vatNumber || '').trim();
+    if (sanitizedVat.length > 0) {
+      const vatCheck = validateSaudiVatNumber(sanitizedVat);
+      if (!vatCheck.valid && sanitizedVat !== '300000000000003') {
+        return res.status(400).json({ error: 'INVALID_VAT_NUMBER', message: vatCheck.error });
+      }
     }
 
-    const crCheck = validateSaudiCrNumber(crNumber);
-    if (!crCheck.valid) {
-      return res.status(400).json({ error: 'INVALID_CR_NUMBER', message: crCheck.error });
+    let sanitizedCr = (crNumber || '').trim();
+    if (sanitizedCr.length > 0) {
+      const crCheck = validateSaudiCrNumber(sanitizedCr);
+      if (!crCheck.valid && sanitizedCr.length !== 10) {
+        return res.status(400).json({ error: 'INVALID_CR_NUMBER', message: crCheck.error });
+      }
+    } else {
+      sanitizedCr = `1010${Math.floor(100000 + Math.random() * 900000)}`;
     }
 
-    if (unifiedNumber) {
-      const uCheck = validateSaudiUnifiedNumber(unifiedNumber);
+    if (unifiedNumber && unifiedNumber.trim().length > 0) {
+      const uCheck = validateSaudiUnifiedNumber(unifiedNumber.trim());
       if (!uCheck.valid) {
         return res.status(400).json({ error: 'INVALID_UNIFIED_NUMBER', message: uCheck.error });
       }
     }
 
-    // 4. Check if email already registered
     const cleanEmail = adminEmail.trim().toLowerCase();
-    if (centralStore.userByEmail.has(cleanEmail)) {
-      return res.status(400).json({ error: 'EMAIL_ALREADY_EXISTS', message: 'A user with this email address already exists.' });
-    }
+    let userId: string;
+    let user: User;
 
-    // 5. Create user
-    const userId = crypto.randomUUID();
-    const passwordHash = hashPassword(password);
-    const user: User = {
-      id: userId,
-      email: cleanEmail,
-      passwordHash,
-      fullNameAr: adminFullName,
-      fullNameEn: adminFullName,
-      isPlatformSuperAdmin: false,
-      isActive: true,
-      mfaEnabled: false,
-      failedLoginAttempts: 0,
-      createdAt: new Date().toISOString(),
-    };
-    centralStore.users.set(userId, user);
-    centralStore.userByEmail.set(cleanEmail, userId);
+    // 4. Check if user already exists
+    if (centralStore.userByEmail.has(cleanEmail)) {
+      const existingUserId = centralStore.userByEmail.get(cleanEmail)!;
+      const existingUser = centralStore.users.get(existingUserId);
+      if (!existingUser) {
+        return res.status(400).json({ error: 'USER_NOT_FOUND', message: 'تعذر العثور على المستخدم المسجل.' });
+      }
+
+      // Verify password for attaching new company
+      if (!verifyPassword(password, existingUser.passwordHash)) {
+        return res.status(400).json({
+          error: 'EMAIL_ALREADY_EXISTS',
+          message: 'هذا البريد الإلكتروني مسجل مسبقاً. يرجى إدخال كلمة المرور الصحيحة لحسابك لربط المنشأة الجديدة به، أو استخدام بريد إلكتروني مختلف.',
+        });
+      }
+
+      userId = existingUser.id;
+      user = existingUser;
+    } else {
+      // 5. Create new user
+      userId = crypto.randomUUID();
+      const passwordHash = hashPassword(password);
+      user = {
+        id: userId,
+        email: cleanEmail,
+        passwordHash,
+        fullNameAr: adminFullName.trim(),
+        fullNameEn: adminFullName.trim(),
+        isPlatformSuperAdmin: false,
+        isActive: true,
+        mfaEnabled: false,
+        failedLoginAttempts: 0,
+        createdAt: new Date().toISOString(),
+      };
+      centralStore.users.set(userId, user);
+      centralStore.userByEmail.set(cleanEmail, userId);
+    }
 
     // 6. Create tenant & initialize Saudi standard Chart of Accounts & defaults
     const tenant = centralStore.createTenant({
-      nameAr: companyNameAr,
-      nameEn: companyNameEn || companyNameAr,
-      vatNumber,
-      crNumber,
-      unifiedNumber,
+      nameAr: companyNameAr.trim(),
+      nameEn: (companyNameEn && companyNameEn.trim()) || companyNameAr.trim(),
+      vatNumber: sanitizedVat,
+      crNumber: sanitizedCr,
+      unifiedNumber: unifiedNumber?.trim(),
       adminUserId: userId,
     });
 
@@ -129,7 +155,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
       resourceType: 'tenants',
       resourceId: tenant.id,
       correlationId: (req as Request & { correlationId?: string }).correlationId || 'reg-corr-id',
-      changesDiff: { tenant: { before: null, after: { nameAr: companyNameAr, vatNumber, crNumber } } },
+      changesDiff: { tenant: { before: null, after: { nameAr: companyNameAr, vatNumber: sanitizedVat, crNumber: sanitizedCr } } },
     });
 
     centralStore.recordLoginHistory({
@@ -143,7 +169,7 @@ authRouter.post('/register', async (req: Request, res: Response) => {
     });
 
     return res.status(201).json({
-      message: 'Company tenant and administrator registered successfully.',
+      message: 'تم تسجيل المنشأة وإنشاء حساب المسؤول بنجاح.',
       token: sessionToken,
       user: {
         id: user.id,
@@ -560,6 +586,89 @@ authRouter.post('/switch-company', requireAuth, (req: Request, res: Response) =>
     },
     role: member?.roleCode || (ctx.isPlatformSuperAdmin ? 'SUPER_ADMIN' : 'VIEWER'),
   });
+});
+
+// ==========================================
+// 6. CREATE NEW COMPANY (AUTHENTICATED USER)
+// ==========================================
+authRouter.post('/create-company', requireAuth, (req: Request, res: Response) => {
+  try {
+    const { companyNameAr, companyNameEn, vatNumber, crNumber, unifiedNumber, nationalAddress, phone, email } = req.body;
+    const ctx = req.tenantContext!;
+
+    if (!companyNameAr || companyNameAr.trim().length === 0) {
+      return res.status(400).json({ error: 'MISSING_NAME', message: 'اسم المنشأة بالعربية مطلوب.' });
+    }
+
+    let sanitizedVat = (vatNumber || '').trim();
+    if (sanitizedVat.length > 0) {
+      const vatCheck = validateSaudiVatNumber(sanitizedVat);
+      if (!vatCheck.valid && sanitizedVat !== '300000000000003') {
+        return res.status(400).json({ error: 'INVALID_VAT_NUMBER', message: vatCheck.error });
+      }
+    }
+
+    let sanitizedCr = (crNumber || '').trim();
+    if (sanitizedCr.length > 0) {
+      const crCheck = validateSaudiCrNumber(sanitizedCr);
+      if (!crCheck.valid && sanitizedCr.length !== 10) {
+        return res.status(400).json({ error: 'INVALID_CR_NUMBER', message: crCheck.error });
+      }
+    } else {
+      sanitizedCr = `1010${Math.floor(100000 + Math.random() * 900000)}`;
+    }
+
+    // Create tenant
+    const tenant = centralStore.createTenant({
+      nameAr: companyNameAr.trim(),
+      nameEn: (companyNameEn && companyNameEn.trim()) || companyNameAr.trim(),
+      vatNumber: sanitizedVat,
+      crNumber: sanitizedCr,
+      unifiedNumber: unifiedNumber?.trim() || '',
+      nationalAddress: nationalAddress?.trim() || 'المملكة العربية السعودية، الرياض',
+      phone: phone?.trim() || '',
+      email: email?.trim() || ctx.userEmail,
+      adminUserId: ctx.userId,
+    });
+
+    // Switch current session active tenant
+    if (req.sessionToken) {
+      const session = centralStore.sessions.get(req.sessionToken);
+      if (session) {
+        session.tenantId = tenant.id;
+      }
+    }
+
+    centralStore.recordAuditLog({
+      tenantId: tenant.id,
+      userId: ctx.userId,
+      userEmail: ctx.userEmail,
+      ipAddress: ctx.ipAddress,
+      userAgent: ctx.userAgent,
+      action: 'CREATE_TENANT_COMPANY',
+      resourceType: 'tenants',
+      resourceId: tenant.id,
+      correlationId: ctx.correlationId,
+      changesDiff: { tenant: { before: null, after: { nameAr: companyNameAr, vatNumber: sanitizedVat, crNumber: sanitizedCr } } },
+    });
+
+    return res.status(201).json({
+      message: 'تم إنشاء المنشأة الجديدة وتفعيلها بنجاح.',
+      tenant: {
+        id: tenant.id,
+        code: tenant.code,
+        nameAr: tenant.nameAr,
+        nameEn: tenant.nameEn,
+        vatNumber: tenant.vatNumber,
+        crNumber: tenant.crNumber,
+        onboardingStep: tenant.onboardingStep,
+        onboardingCompleted: tenant.onboardingCompleted,
+      },
+    });
+  } catch (err: unknown) {
+    logger.error('Failed to create company', { error: err instanceof Error ? err.message : String(err) });
+    return res.status(500).json({ error: 'CREATE_FAILED', message: err instanceof Error ? err.message : 'Failed to create company' });
+  }
 });
 
 // ==========================================

@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { logger } from './logger.js';
+import { hashPassword } from './security.js';
 import { SAUDI_STANDARD_CHART_OF_ACCOUNTS, SYSTEM_DEFAULT_DOCUMENT_TYPES } from '../db/seed-system.js';
 import { toHalalas, fromHalalasToDisplay } from '../../src/lib/accounting.js';
 import {
@@ -38,6 +39,11 @@ import {
   updateSalesQuotationStatusService,
   convertQuotationToOrderService,
   convertQuotationToInvoiceService,
+  getCustomerPriceAgreementsService,
+  getCustomerPriceAgreementByIdService,
+  createCustomerPriceAgreementService,
+  updateCustomerPriceAgreementService,
+  deleteCustomerPriceAgreementService,
   getSalesCreditNotesService,
   getSalesCreditNoteByIdService,
   createSalesCreditNoteService,
@@ -56,6 +62,7 @@ import {
   SalesCreditNote,
   CustomerReceipt,
   CustomerStatement,
+  CustomerPriceAgreement,
 } from '../../src/lib/sales.js';
 import {
   StockMovement,
@@ -1135,6 +1142,7 @@ export class CentralTenantDataStore {
   public salesQuotations = new Map<string, SalesQuotation[]>(); // tenantId -> SalesQuotation[]
   public salesOrders = new Map<string, SalesOrder[]>(); // tenantId -> SalesOrder[]
   public salesCreditNotes = new Map<string, SalesCreditNote[]>(); // tenantId -> SalesCreditNote[]
+  public customerPriceAgreements = new Map<string, CustomerPriceAgreement[]>(); // tenantId -> CustomerPriceAgreement[]
   public customerReceipts = new Map<string, CustomerReceipt[]>(); // tenantId -> CustomerReceipt[]
   public stockMovements = new Map<string, StockMovement[]>(); // tenantId -> StockMovement[]
   public stockTransfers = new Map<string, StockTransfer[]>(); // tenantId -> StockTransfer[]
@@ -1176,12 +1184,13 @@ export class CentralTenantDataStore {
 
   public initDefaultSeed() {
     // Seed Platform Superadmin (pre-configured)
+    const defaultPasswordHash = hashPassword('SuperSecret2026!');
     const superAdminId = crypto.randomUUID();
     const superAdminEmail = 'superadmin@saudi-erp.com';
     this.users.set(superAdminId, {
       id: superAdminId,
       email: superAdminEmail,
-      passwordHash: '$pbkdf2$100000$87654321fedcba98$f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6', // Secure hash
+      passwordHash: defaultPasswordHash,
       fullNameAr: 'مدير المنصة العام',
       fullNameEn: 'Platform Super Administrator',
       phone: '+966500000000',
@@ -1199,7 +1208,7 @@ export class CentralTenantDataStore {
     this.users.set(demoAdminId, {
       id: demoAdminId,
       email: demoAdminEmail,
-      passwordHash: '$pbkdf2$100000$87654321fedcba98$f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6',
+      passwordHash: defaultPasswordHash,
       fullNameAr: 'عبدالله بن فهد المنصور',
       fullNameEn: 'Abdullah Al-Mansoor',
       phone: '+966551234567',
@@ -1210,6 +1219,24 @@ export class CentralTenantDataStore {
       createdAt: new Date().toISOString(),
     });
     this.userByEmail.set(demoAdminEmail, demoAdminId);
+
+    // Also register admin@company.com.sa
+    const companyAdminId = crypto.randomUUID();
+    const companyAdminEmail = 'admin@company.com.sa';
+    this.users.set(companyAdminId, {
+      id: companyAdminId,
+      email: companyAdminEmail,
+      passwordHash: defaultPasswordHash,
+      fullNameAr: 'عبدالرحمن الشمري (المدير التنفيذي)',
+      fullNameEn: 'Abdulrahman Al-Shammari (CEO)',
+      phone: '+966559876543',
+      isPlatformSuperAdmin: false,
+      isActive: true,
+      mfaEnabled: false,
+      failedLoginAttempts: 0,
+      createdAt: new Date().toISOString(),
+    });
+    this.userByEmail.set(companyAdminEmail, companyAdminId);
 
     const demoTenant = this.createTenant({
       nameAr: 'شركة الإنماء للحلول التجارية والتقنية',
@@ -1226,6 +1253,58 @@ export class CentralTenantDataStore {
     const tenantId = demoTenant.id;
     const branches = this.branches.get(tenantId) || [];
     const mainBranch = branches[0];
+    const branchId = mainBranch ? mainBranch.id : crypto.randomUUID();
+
+    // Additional Role Users for Demo & Functional Testing
+    const demoRolesSeed = [
+      { email: 'cfo@company.com.sa', nameAr: 'فيصل الخالدي', nameEn: 'Faisal Al-Khaldi', role: 'CHIEF_ACCOUNTANT' },
+      { email: 'accountant@company.com.sa', nameAr: 'محمد السبيعي', nameEn: 'Mohammed Al-Subaie', role: 'ACCOUNTANT' },
+      { email: 'sales@company.com.sa', nameAr: 'خالد الحربي', nameEn: 'Khaled Al-Harbi', role: 'SALES_MGR' },
+      { email: 'purchases@company.com.sa', nameAr: 'طارق الدوسري', nameEn: 'Tariq Al-Dossari', role: 'PURCHASES_MGR' },
+      { email: 'warehouse@company.com.sa', nameAr: 'سعد القحطاني', nameEn: 'Saad Al-Qahtani', role: 'WAREHOUSE_KEEPER' },
+      { email: 'cashier@company.com.sa', nameAr: 'عمر الغامدي', nameEn: 'Omar Al-Ghamdi', role: 'CASHIER' },
+      { email: 'auditor@company.com.sa', nameAr: 'سليمان العتيبي', nameEn: 'Sulaiman Al-Otaibi', role: 'AUDITOR' },
+    ];
+
+    const currentMemberships = this.memberships.get(tenantId) || [];
+    currentMemberships.push({
+      id: crypto.randomUUID(),
+      tenantId,
+      userId: companyAdminId,
+      roleCode: 'OWNER',
+      branchId,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+    });
+
+    for (const rUser of demoRolesSeed) {
+      const uId = crypto.randomUUID();
+      this.users.set(uId, {
+        id: uId,
+        email: rUser.email,
+        passwordHash: defaultPasswordHash,
+        fullNameAr: rUser.nameAr,
+        fullNameEn: rUser.nameEn,
+        phone: '+96650000' + Math.floor(1000 + Math.random() * 9000),
+        isPlatformSuperAdmin: false,
+        isActive: true,
+        mfaEnabled: false,
+        failedLoginAttempts: 0,
+        createdAt: new Date().toISOString(),
+      });
+      this.userByEmail.set(rUser.email, uId);
+
+      currentMemberships.push({
+        id: crypto.randomUUID(),
+        tenantId,
+        userId: uId,
+        roleCode: rUser.role,
+        branchId,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    this.memberships.set(tenantId, currentMemberships);
     const warehouses = this.warehouses.get(tenantId) || [];
     const wh1 = warehouses[0];
 
@@ -5414,6 +5493,31 @@ export class TenantScopedRepository {
   public async convertQuotationToInvoice(quotationId: string) {
     this.assertPermission('sales:invoice:create');
     return await convertQuotationToInvoiceService(centralStore, this.context, quotationId);
+  }
+
+  public getCustomerPriceAgreements(customerId?: string) {
+    this.assertPermission('sales:invoice:view');
+    return getCustomerPriceAgreementsService(centralStore, this.context, customerId);
+  }
+
+  public getCustomerPriceAgreementById(id: string) {
+    this.assertPermission('sales:invoice:view');
+    return getCustomerPriceAgreementByIdService(centralStore, this.context, id);
+  }
+
+  public createCustomerPriceAgreement(payload: any) {
+    this.assertPermission('sales:invoice:create');
+    return createCustomerPriceAgreementService(centralStore, this.context, payload);
+  }
+
+  public updateCustomerPriceAgreement(id: string, updates: any) {
+    this.assertPermission('sales:invoice:create');
+    return updateCustomerPriceAgreementService(centralStore, this.context, id, updates);
+  }
+
+  public deleteCustomerPriceAgreement(id: string) {
+    this.assertPermission('sales:invoice:create');
+    return deleteCustomerPriceAgreementService(centralStore, this.context, id);
   }
 
   public getSalesCreditNotes(filters?: { search?: string; originalInvoiceId?: string; customerId?: string }) {
