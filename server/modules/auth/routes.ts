@@ -50,6 +50,15 @@ authRouter.post('/register', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'VALIDATION_FAILED', message: 'جميع الحقول الإلزامية مطلوبة (اسم المنشأة، اسم المسؤول، البريد الإلكتروني، وكلمة المرور).' });
     }
 
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'PASSWORD_TOO_SHORT', message: 'كلمة المرور يجب أن تحتوي على 8 خانات على الأقل لضمان الأمان.' });
+    }
+
+    const cleanEmail = adminEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return res.status(400).json({ error: 'INVALID_EMAIL', message: 'يرجى إدخال عنوان بريد إلكتروني صحيح.' });
+    }
+
     // 3. Validate Saudi Tax & Legal IDs (if provided)
     let sanitizedVat = (vatNumber || '').trim();
     if (sanitizedVat.length > 0) {
@@ -76,7 +85,6 @@ authRouter.post('/register', async (req: Request, res: Response) => {
       }
     }
 
-    const cleanEmail = adminEmail.trim().toLowerCase();
     let userId: string;
     let user: User;
 
@@ -190,8 +198,13 @@ authRouter.post('/register', async (req: Request, res: Response) => {
       },
     });
   } catch (err: unknown) {
-    logger.error('Registration failed', { error: err instanceof Error ? err.message : String(err) });
-    return res.status(500).json({ error: 'REGISTRATION_FAILED', message: err instanceof Error ? err.message : 'Registration error' });
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    logger.error('Registration failed', { error: errorMsg, stack: err instanceof Error ? err.stack : undefined });
+    return res.status(500).json({
+      error: 'REGISTRATION_FAILED',
+      message: `فشل تسجيل المنشأة: ${errorMsg}`,
+      details: errorMsg,
+    });
   }
 });
 
