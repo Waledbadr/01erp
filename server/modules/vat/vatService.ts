@@ -546,17 +546,30 @@ export function getVatReconciliationService(
   let glOutputVatCreditCents = 0n;
   let glInputVatDebitCents = 0n;
   let glInputVatCreditCents = 0n;
+  // Journal lines from different modules store cents as bigint, number or string;
+  // convert explicitly (mixing bigint and number throws a TypeError).
+  const cents = (v: unknown): bigint => {
+    if (typeof v === 'bigint') return v;
+    if (typeof v === 'string' && /^-?\d+$/.test(v.trim())) return BigInt(v.trim());
+    const n = Number(v ?? 0);
+    if (!Number.isFinite(n)) return 0n;
+    const r = Math.round(n);
+    if (!Number.isSafeInteger(r)) {
+      throw new Error(`Journal line amount in cents exceeds safe integer range: ${String(v)}`);
+    }
+    return BigInt(r);
+  };
 
   for (const j of journals) {
     if (j.status === 'POSTED' && j.entryDate <= cutoff) {
       for (const l of j.lines) {
         if (l.accountCode === '20301' || l.accountCode === '210201' || l.accountNameAr?.includes('مخرجات') || l.accountNameEn?.toLowerCase().includes('output vat')) {
-          glOutputVatDebitCents += l.debitCents;
-          glOutputVatCreditCents += l.creditCents;
+          glOutputVatDebitCents += cents(l.debitCents);
+          glOutputVatCreditCents += cents(l.creditCents);
         }
         if (l.accountCode === '10301' || l.accountCode === '210202' || l.accountNameAr?.includes('مدخلات') || l.accountNameEn?.toLowerCase().includes('input vat')) {
-          glInputVatDebitCents += l.debitCents;
-          glInputVatCreditCents += l.creditCents;
+          glInputVatDebitCents += cents(l.debitCents);
+          glInputVatCreditCents += cents(l.creditCents);
         }
       }
     }

@@ -96,3 +96,19 @@ This document records all principal architectural and technical decisions made f
 - **Consequences**: High-trust executive financial intelligence, zero risk of hallucinated balances or accidental automated postings, complete regulatory audit compliance, and rock-solid multi-tenant security.
 
 
+
+
+---
+
+## ADR-012: Incremental move from in-memory store to PostgreSQL (2026-09-25)
+- **Context**: All services read and write `CentralTenantDataStore` synchronously; nothing was stored in PostgreSQL.
+  Rewriting every service to async repositories at once is high risk.
+- **Decision**: Move data to PostgreSQL one unit at a time. Unit 1 (identity: users, companies, branches,
+  memberships, sessions, invites, auth tokens, login history) uses a request-scoped load/save layer
+  (`server/db/identityPersistence.ts`): PostgreSQL is authoritative; required rows are loaded before the
+  handler; changed rows are saved in one transaction before the response. Handlers are unchanged.
+  Schema changes go through versioned SQL migrations (`server/db/migrations.ts`).
+- **Acceptance rule for every unit**: data must survive a hard restart and stay consistent between two
+  running processes, proven by an integration test against a real PostgreSQL database.
+- **Consequences**: Identity data is durable now. The change-detection scan is a transitional mechanism; later
+  units (starting with the general ledger) should write through explicit repositories with row locking.

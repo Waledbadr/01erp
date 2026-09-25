@@ -4,6 +4,7 @@
  */
 
 import { Router, Request, Response } from 'express';
+import crypto from 'crypto';
 import { BillingService } from './billingService.js';
 import { PLANS_CATALOG, PlanCode, BillingCycle } from './types.js';
 import { authenticateRequest } from '../../core/authMiddleware.js';
@@ -27,9 +28,33 @@ billingRouter.get('/gateway-status', (req: Request, res: Response) => {
   });
 });
 
-// 3. Payment Webhook (Idempotent, unauthenticated callback with signature verification)
+/**
+ * Verifies `x-webhook-signature: <hex HMAC-SHA256 of the raw request body>` using
+ * BILLING_WEBHOOK_SECRET. Without a configured secret the webhook is disabled, because an
+ * unsigned callback would let anyone mark subscription invoices as paid.
+ */
+function verifyWebhookSignature(req: Request): { ok: true } | { ok: false; status: number; error: string } {
+  const secret = process.env.BILLING_WEBHOOK_SECRET;
+  if (!secret) return { ok: false, status: 503, error: 'WEBHOOK_NOT_CONFIGURED' };
+  const provided = String(req.headers['x-webhook-signature'] || '').trim().toLowerCase();
+  const raw: Buffer | undefined = (req as Request & { rawBody?: Buffer }).rawBody;
+  if (!provided || !raw) return { ok: false, status: 401, error: 'INVALID_SIGNATURE' };
+  const expected = crypto.createHmac('sha256', secret).update(raw).digest('hex');
+  const a = Buffer.from(provided, 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return { ok: false, status: 401, error: 'INVALID_SIGNATURE' };
+  }
+  return { ok: true };
+}
+
+// 3. Payment Webhook (idempotent, unauthenticated callback; HMAC signature required)
 billingRouter.post('/webhook', async (req: Request, res: Response) => {
   try {
+    const sig = verifyWebhookSignature(req);
+    if (sig.ok === false) {
+      return res.status(sig.status).json({ error: sig.error });
+    }
     const { event, invoiceId, tenantId, transactionId, amountSar } = req.body;
     if (!transactionId) {
       return res.status(400).json({ error: 'transactionId is required' });

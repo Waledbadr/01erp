@@ -23,15 +23,41 @@ import {
   validateSaudiUnifiedNumber,
 } from '../../utils/saudiValidators.js';
 
+// Public, non-secret server settings: whether the in-memory demo accounts exist and
+// whether Cloudflare Turnstile is configured. Used to avoid showing demo credentials
+// or security badges that are not true for this deployment.
+interface PublicAuthConfig {
+  demoMode: boolean;
+  turnstileConfigured: boolean;
+}
+
+function usePublicAuthConfig(): PublicAuthConfig {
+  const [config, setConfig] = useState<PublicAuthConfig>({ demoMode: false, turnstileConfigured: false });
+  useEffect(() => {
+    let active = true;
+    fetch('/api/v1/auth/public-config')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (active && d) setConfig({ demoMode: !!d.demoMode, turnstileConfigured: !!d.turnstileConfigured });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
+  return config;
+}
+
 // ====================================================
 // 1. LOGIN VIEW WITH MFA & BRUTE-FORCE LOCKOUT TIMER
 // ====================================================
 export const LoginView: React.FC<{ onNavigate: (route: string) => void }> = ({ onNavigate }) => {
   const { t, isRTL } = useI18n();
   const toast = useToast();
+  const publicConfig = usePublicAuthConfig();
 
-  const [email, setEmail] = useState('admin@company.com.sa');
-  const [password, setPassword] = useState('SuperSecret2026!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // Lockout State
@@ -206,7 +232,8 @@ export const LoginView: React.FC<{ onNavigate: (route: string) => void }> = ({ o
           </button>
         </div>
 
-        {/* Turnstile Bot Protection Indicator */}
+        {/* Turnstile Bot Protection Indicator (only when actually configured) */}
+        {publicConfig.turnstileConfigured && (
         <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs text-slate-500">
           <span className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
@@ -216,6 +243,7 @@ export const LoginView: React.FC<{ onNavigate: (route: string) => void }> = ({ o
             SECURE
           </span>
         </div>
+        )}
 
         <Button
           type="submit"
@@ -238,7 +266,8 @@ export const LoginView: React.FC<{ onNavigate: (route: string) => void }> = ({ o
         </button>
       </div>
 
-      {/* Quick Demo Credentials Matrix */}
+      {/* Quick Demo Credentials Matrix (demo deployments only) */}
+      {publicConfig.demoMode && (
       <div className="mt-6 pt-5 border-t border-slate-200">
         <div className="flex items-center justify-between mb-2.5">
           <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
@@ -285,6 +314,7 @@ export const LoginView: React.FC<{ onNavigate: (route: string) => void }> = ({ o
           ))}
         </div>
       </div>
+      )}
 
       {/* MFA Modal Popup */}
       {showMfaModal && (
@@ -346,6 +376,7 @@ export const LoginView: React.FC<{ onNavigate: (route: string) => void }> = ({ o
 export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = ({ onNavigate }) => {
   const { t } = useI18n();
   const toast = useToast();
+  const publicConfig = usePublicAuthConfig();
 
   const [companyNameAr, setCompanyNameAr] = useState('');
   const [companyNameEn, setCompanyNameEn] = useState('');
@@ -479,6 +510,7 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
           <h2 className="text-xl font-extrabold text-slate-900">{t.auth.registerTitle}</h2>
           <p className="text-xs text-slate-500 mt-1">{t.auth.registerSubtitle}</p>
         </div>
+        {publicConfig.demoMode && (
         <button
           type="button"
           onClick={fillSampleData}
@@ -488,6 +520,7 @@ export const RegisterView: React.FC<{ onNavigate: (route: string) => void }> = (
           <Sparkles className="w-3.5 h-3.5 text-emerald-600 animate-pulse" />
           <span>تعبئة سريعة للتجربة</span>
         </button>
+        )}
       </div>
 
       <form onSubmit={handleRegister} className="space-y-4">

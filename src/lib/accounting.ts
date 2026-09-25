@@ -157,14 +157,14 @@ export function validateJournalBalance(lines: JournalLine[]): BalanceValidationR
  */
 export function formatCurrency(amount: string | number, lang: 'ar' | 'en' = 'ar'): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-  if (isNaN(num)) return lang === 'ar' ? '0.00 ﷼' : 'SAR 0.00';
+  if (isNaN(num)) return lang === 'ar' ? '0.00 ر.س' : 'SAR 0.00';
 
   const parts = num.toLocaleString('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
 
-  return lang === 'ar' ? `${parts} ﷼` : `SAR ${parts}`;
+  return lang === 'ar' ? `${parts} ر.س` : `SAR ${parts}`;
 }
 
 /**

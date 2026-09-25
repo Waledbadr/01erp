@@ -239,7 +239,7 @@ export const CompanyWizardView: React.FC<{ onNavigate: (route: string) => void }
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Page Header */}
       <PageHeader
-        title={isAr ? 'معالج إعداد المنشأة والامتثال السعودي (10 خطوات)' : 'Company Setup & Saudi Compliance Wizard'}
+        title={isAr ? 'بيانات المنشأة' : 'Company Profile'}
         subtitle={
           isAr
             ? 'الإعداد الشامل للهوية القانونية، الربط الضريبي، وشجرة الحسابات، وترقيم المستندات المعتمدة'

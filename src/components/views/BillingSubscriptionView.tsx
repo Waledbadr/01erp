@@ -173,7 +173,7 @@ export const BillingSubscriptionView: React.FC<{ onNavigate?: (route: string) =>
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              {isAr ? 'إدارة الباقة والاشتراك السحابي' : 'SaaS Billing & Subscription'}
+              {isAr ? 'الاشتراك' : 'Subscription'}
             </h1>
             <Badge variant={isSuspended ? 'danger' : subscription?.status === 'ACTIVE' ? 'success' : 'warning'}>
               {subscription?.status || 'ACTIVE'}
@@ -630,7 +630,7 @@ export const BillingSubscriptionView: React.FC<{ onNavigate?: (route: string) =>
             <p className="text-xs text-slate-500">
               {isAr
                 ? 'فواتير ضريبية نظامية بنسبة 15% مرحلة ومقيدة بقيود محاسبية متوازنة دفترياً (قاعدة G1)'
-                : 'Statutory 15% VAT invoices linked to General Ledger double-entry vouchers (Rule G1)'}
+                : 'Statutory 15% VAT invoices linked to General Ledger double-entry vouchers'}
             </p>
           </div>
           <span className="text-xs font-bold text-slate-500">

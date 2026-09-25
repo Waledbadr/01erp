@@ -246,15 +246,12 @@ export const ImportExportCenterView: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="bg-blue-600 text-white text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                Phase 19
-              </span>
               <h1 className="text-2xl font-bold text-slate-900">
-                مركز الاستيراد والتصدير الموحد
+                استيراد وتصدير البيانات
               </h1>
             </div>
             <p className="text-slate-600 text-sm mt-1">
-              محرك الاستيراد والتصدير الذكي الشامل، التحقق المسبق الصارم (Rule G1)، التراجع الذري التام، ومطابقة الأعمدة التلقائية
+              محرك الاستيراد والتصدير الذكي الشامل، التحقق المسبق الصارم، التراجع الذري التام، ومطابقة الأعمدة التلقائية
             </p>
           </div>
 
@@ -648,7 +645,7 @@ export const ImportExportCenterView: React.FC = () => {
                   الخطوة 4: الفحص الجاف والتحقق من القواعد المحاسبية
                 </h3>
                 <p className="text-sm text-slate-500">
-                  الفحص يتم في الذاكرة دون كتابة أي سجلات في قاعدة البيانات، مع التحقق من الهوية السعودية وقاعدة توازن القيود (G1).
+                  الفحص يتم في الذاكرة دون كتابة أي سجلات في قاعدة البيانات، مع التحقق من الهوية السعودية وقاعدة توازن القيود.
                 </p>
               </div>
 

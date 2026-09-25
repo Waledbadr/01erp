@@ -31,6 +31,7 @@ import { importExportRouter } from './modules/importexport/routes.js';
 import { billingRouter } from './modules/billing/routes.js';
 import { checkTenantNotSuspended, securityHeadersMiddleware, csrfProtectionMiddleware } from './core/authMiddleware.js';
 import { generateCsrfToken } from './core/security.js';
+import { identityPersistenceMiddleware } from './db/identityPersistence.js';
 
 export function createExpressApp(): express.Express {
   const app = express();
@@ -57,8 +58,20 @@ export function createExpressApp(): express.Express {
   app.use(securityHeadersMiddleware);
 
   // 3. Parsers
-  app.use(express.json({ limit: '10mb' }));
+  app.use(
+    express.json({
+      limit: '10mb',
+      // Keep the exact bytes for webhook signature verification (HMAC over the raw body).
+      verify: (req, _res, buf) => {
+        (req as Request & { rawBody?: Buffer }).rawBody = buf;
+      },
+    }),
+  );
   app.use(express.urlencoded({ extended: true }));
+
+  // 3b. Identity persistence (users, companies, sessions) when DATABASE_URL is set.
+  //     Loads what the request needs from PostgreSQL and saves changes before responding.
+  app.use(identityPersistenceMiddleware);
 
   // 4. Central Auth & Tenant Context Middleware
   app.use(authMiddleware);

@@ -644,7 +644,7 @@ export const PointOfSaleView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-bold text-white tracking-wide">
-                {isAr ? 'نقطة البيع السحابية (POS)' : 'Cloud Point of Sale (POS)'}
+                {isAr ? 'نقطة البيع' : 'Point of Sale'}
               </h1>
               {/* Online / Offline Status Badge */}
               {isOnline ? (

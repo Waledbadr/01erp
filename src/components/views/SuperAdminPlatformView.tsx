@@ -248,7 +248,7 @@ export const SuperAdminPlatformView: React.FC<{ onNavigate?: (route: string) => 
         <ShieldCheck className="w-6 h-6 text-indigo-700 shrink-0 mt-0.5" />
         <div className="text-xs space-y-1">
           <span className="font-extrabold text-sm block text-indigo-950">
-            {isAr ? 'حدود الأمان وحماية خصوصية بيانات المستأجرين (Rule B / Multi-Tenant Isolation)' : 'Strict Privacy & Data Boundary Enforcement'}
+            {isAr ? 'حدود الأمان وحماية خصوصية بيانات المستأجرين' : 'Strict Privacy & Data Boundary Enforcement'}
           </span>
           <p className="text-indigo-800">
             {isAr

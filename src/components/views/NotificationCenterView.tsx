@@ -264,7 +264,7 @@ export const NotificationCenterView: React.FC<NotificationCenterViewProps> = ({
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  {isAr ? 'مركز الإشعارات والتنبيهات الفورية' : 'Notification Center & Instant Alerts'}
+                  {isAr ? 'الإشعارات' : 'Notifications'}
                 </h1>
                 {unreadCount > 0 && (
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-rose-600 text-white shadow-xs animate-pulse">
@@ -275,7 +275,7 @@ export const NotificationCenterView: React.FC<NotificationCenterViewProps> = ({
               <p className="text-xs sm:text-sm text-slate-500 mt-1">
                 {isAr
                   ? 'إدارة التنبيهات المجدولة والحية، الفواتير المستحقة، اعتماد زاتكا، وتفضيلات القنوات (المرحلة 13/14)'
-                  : 'Manage real-time lifecycle alerts, overdue invoices, ZATCA status, and delivery preferences (Phase 13/14)'}
+                  : 'Manage real-time lifecycle alerts, overdue invoices, ZATCA status, and delivery preferences'}
               </p>
             </div>
           </div>

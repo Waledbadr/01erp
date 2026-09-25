@@ -198,7 +198,7 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
         fetch('/api/v1/inventory/stocks/summary', { headers: getAuthHeaders() }),
         fetch('/api/v1/inventory/categories', { headers: getAuthHeaders() }),
         fetch('/api/v1/inventory/brands', { headers: getAuthHeaders() }),
-        fetch('/api/v1/inventory/alerts/low-stock', { headers: getAuthHeaders() }),
+        fetch('/api/v1/inventory/low-stock-alerts', { headers: getAuthHeaders() }),
       ]);
 
       if (itemsRes.ok) {
@@ -346,11 +346,11 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
     <div className="space-y-6">
       {/* 1. Header & Actions */}
       <PageHeader
-        title={isAr ? 'إدارة المخزون والمستودعات والتكلفة' : 'Inventory & Perpetual WAC Master'}
+        title={isAr ? 'الأصناف والمستودعات' : 'Items & Warehouses'}
         subtitle={
           isAr
-            ? 'دليل الأصناف الموحد، وحدات القياس المتعددة (Multi-UOM)، التحقق من الباركود (Rule I4)، وتقييم المخزون المستمر (Rule I2).'
-            : 'Unified Product Master, Multi-UOM hierarchy, item-unit barcodes (Rule I4), and Perpetual WAC valuation (Rule I2).'
+            ? 'دليل الأصناف الموحد، وحدات القياس المتعددة (Multi-UOM)، التحقق من الباركود، وتقييم المخزون المستمر.'
+            : 'Unified Product Master, Multi-UOM hierarchy, item-unit barcodes, and Perpetual WAC valuation.'
         }
         actions={
           <div className="flex items-center gap-2">
@@ -418,7 +418,7 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
 
         <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">{isAr ? 'الامتثال للباركود' : 'Rule I4 Compliance'}</span>
+            <span className="text-xs font-semibold text-slate-500">{isAr ? 'الامتثال للباركود' : 'Barcode Compliance'}</span>
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
           </div>
           <p className="mt-2 text-2xl font-black text-emerald-700">100%</p>
@@ -489,7 +489,7 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
           }`}
         >
           <History className="w-4 h-4" />
-          {isAr ? 'سجل الحركات (Rule I1)' : 'Movements'}
+          {isAr ? 'سجل الحركات' : 'Movements'}
         </button>
 
         <button
@@ -537,7 +537,7 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
           }`}
         >
           <Ship className="w-4 h-4" />
-          {isAr ? 'تكاليف الشحن (Rule I6)' : 'Landed Cost'}
+          {isAr ? 'تكاليف الشحن' : 'Landed Cost'}
         </button>
 
         <button
@@ -728,10 +728,10 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
                                   <div className="flex items-center justify-between mb-2">
                                     <h4 className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
                                       <Layers className="w-3.5 h-3.5 text-emerald-700" />
-                                      {isAr ? `تدرج وحدات قياس الصنف (${item.sku}) والباركود الفريد (Rule I4)` : `Packaging Units & Unique Barcodes for ${item.sku}`}
+                                      {isAr ? `تدرج وحدات قياس الصنف (${item.sku}) والباركود الفريد` : `Packaging Units & Unique Barcodes for ${item.sku}`}
                                     </h4>
                                     <span className="text-[11px] text-slate-500">
-                                      {isAr ? 'المخزون الداخلي يحفظ دائماً بالوحدة الأساسية (Rule I3)' : 'Internal stock tracks base units strictly'}
+                                      {isAr ? 'المخزون الداخلي يحفظ دائماً بالوحدة الأساسية' : 'Internal stock tracks base units strictly'}
                                     </span>
                                   </div>
 
@@ -805,8 +805,8 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
 
             <p className="text-xs text-slate-600 leading-relaxed">
               {isAr
-                ? 'وفقاً للقاعدة الذهبية (Rule I4)، ينتمي الباركود بشكل حصري لثنائية (الصنف، الوحدة). المسح أدناه يعيد الوحدة وسعرها ومخزونها المحدد دون التباس.'
-                : 'Under Golden Rule I4, every barcode uniquely belongs to an (Item, Unit) tuple. Resolves packaging unit, stock, and VAT-inclusive price.'}
+                ? 'ينتمي الباركود بشكل حصري لثنائية (الصنف، الوحدة). المسح أدناه يعيد الوحدة وسعرها ومخزونها المحدد دون التباس.'
+                : 'Every barcode uniquely belongs to an (Item, Unit) tuple. Resolves packaging unit, stock, and VAT-inclusive price.'}
             </p>
 
             <div className="space-y-2">
@@ -868,7 +868,7 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
               <span>{isAr ? 'نتيجة مطابقة الباركود مع الصنف والوحدة' : 'Tuple Resolution Response'}</span>
               {barcodeResult && (
                 <Badge variant="success" size="sm">
-                  {isAr ? 'مطابق للقاعدة I4' : 'Rule I4 Verified'}
+                  {isAr ? 'مطابق' : 'Verified'}
                 </Badge>
               )}
             </h4>
@@ -949,7 +949,7 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
             <h4 className="text-xs font-bold text-slate-900 mb-1">
-              {isAr ? 'مصفوفة أرصدة المستودعات وتقييم المخزون المستمر (Rule I2)' : 'Warehouse Stock Matrix & Perpetual WAC Valuation'}
+              {isAr ? 'مصفوفة أرصدة المستودعات وتقييم المخزون المستمر' : 'Warehouse Stock Matrix & Perpetual WAC Valuation'}
             </h4>
             <p className="text-xs text-slate-500 mb-4">
               {isAr

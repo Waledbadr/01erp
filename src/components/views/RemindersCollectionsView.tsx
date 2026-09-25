@@ -330,7 +330,7 @@ export const RemindersCollectionsView: React.FC<RemindersCollectionsViewProps> =
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-                  {isAr ? 'إدارة التحصيل والتذكيرات الآلية (G4)' : 'Collections & Automated Reminders (Rule G4)'}
+                  {isAr ? 'التحصيل والتذكيرات' : 'Collections & Reminders'}
                 </h1>
                 <Badge variant="brand" size="sm">
                   {isAr ? 'مرتبط بدفتر الأستاذ' : 'Ledger Linked'}

@@ -64,6 +64,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   // Multi-Company State
   const [userCompanies, setUserCompanies] = useState<Array<{ id: string; nameAr: string; nameEn?: string; code: string; isCurrent: boolean }>>([]);
   const [currentCompanyName, setCurrentCompanyName] = useState<string>('');
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [isSwitchingCompany, setIsSwitchingCompany] = useState(false);
 
   // Add Company Modal State
@@ -82,6 +83,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       });
       if (res.ok) {
         const data = await res.json();
+        setIsPlatformAdmin(!!data.user?.isPlatformSuperAdmin);
         const activeComp = data.company || data.currentTenant;
         if (activeComp) {
           setCurrentCompanyName(isAr ? activeComp.nameAr : (activeComp.nameEn || activeComp.nameAr));
@@ -221,42 +223,125 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
     disabledTag?: string;
   }
 
-  const navigationItems: NavItem[] = [
-    { id: '/', label: t.nav.dashboard, icon: LayoutDashboard },
-    { id: '/company-wizard', label: isAr ? 'معالج إعداد المنشأة' : 'Company Wizard', icon: Building2 },
-    { id: '/users', label: isAr ? 'المستخدمين والصلاحيات' : 'Users & RBAC', icon: ShieldCheck },
-    { id: '/design-system', label: t.nav.designSystem, icon: Palette },
-    { id: '/docs', label: t.nav.docs, icon: BookOpen },
-    { id: '/audit', label: t.nav.auditTools, icon: ShieldCheck },
-    { id: '/security', label: isAr ? 'الأمان والنسخ الاحتياطي' : 'Security & Backups', icon: ShieldCheck },
-    { id: '/roadmap', label: t.nav.roadmap, icon: Milestone },
-    { id: '/accounting', label: t.nav.accounting, icon: FileSpreadsheet },
-    { id: '/inventory', label: t.nav.inventory, icon: Boxes },
-    { id: '/parties', label: isAr ? 'العملاء والموردين' : 'Customers & Suppliers', icon: Users },
-    { id: '/sales', label: t.nav.sales, icon: FileText },
-    { id: '/pos', label: isAr ? 'نقطة البيع (POS الكاشير)' : 'Point of Sale (POS)', icon: Store },
-    { id: '/zatca', label: t.nav.zatca, icon: ShieldCheck },
-    { id: '/purchasing', label: t.nav.purchasing, icon: ShoppingBag },
-    { id: '/ocr', label: isAr ? 'التقاط فواتير الموردين (OCR)' : 'OCR Invoice Capture', icon: FileCheck },
-    { id: '/treasury', label: t.nav.treasury, icon: Coins },
-    { id: '/vat', label: t.nav.vatTax, icon: Percent },
-    { id: '/reports', label: isAr ? 'مركز التقارير (24 تقريراً)' : 'Reports Center (24)', icon: FileBarChart },
-    { id: '/documents', label: isAr ? 'المستندات والطباعة' : 'Documents & Print', icon: Printer },
-    { id: '/notifications', label: isAr ? 'مركز الإشعارات والتنبيهات' : 'Notifications & Alerts', icon: Bell },
-    { id: '/reminders', label: isAr ? 'التحصيل والتذكيرات (G4)' : 'Collections & Reminders (G4)', icon: Calendar },
-    { id: '/automation', label: isAr ? 'محرك الأتمتة وقواعد الأعمال' : 'Automation & Rules', icon: Zap },
-    { id: '/assistant', label: isAr ? 'المساعد المالي الذكي (AI)' : 'Financial AI Assistant', icon: Sparkles },
-    { id: '/import-export', label: isAr ? 'مركز الاستيراد والتصدير' : 'Import & Export Center', icon: Upload },
-    { id: '/billing', label: isAr ? 'الباقة والاشتراك (SaaS)' : 'Billing & Subscription', icon: CreditCard },
-    { id: '/superadmin', label: isAr ? 'لوحة المشرف العام' : 'Super Admin Console', icon: ShieldAlert },
+  // Developer-only screens (design guide, internal docs, build roadmap, audit tools) are
+  // shown only in development builds, never to customers.
+  const isDevBuild = Boolean((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV);
+
+  interface NavGroup {
+    title?: string;
+    items: NavItem[];
+  }
+
+  const navGroups: NavGroup[] = [
+    {
+      items: [{ id: '/', label: isAr ? 'الرئيسية' : 'Home', icon: LayoutDashboard }],
+    },
+    {
+      title: isAr ? 'المبيعات' : 'Sales',
+      items: [
+        { id: '/sales', label: isAr ? 'فواتير المبيعات' : 'Sales Invoices', icon: FileText },
+        { id: '/pos', label: isAr ? 'نقطة البيع' : 'Point of Sale', icon: Store },
+        { id: '/parties', label: isAr ? 'العملاء والموردون' : 'Customers & Suppliers', icon: Users },
+        { id: '/reminders', label: isAr ? 'التحصيل والتذكيرات' : 'Collections', icon: Calendar },
+      ],
+    },
+    {
+      title: isAr ? 'المشتريات والمخزون' : 'Purchasing & Stock',
+      items: [
+        { id: '/purchasing', label: isAr ? 'المشتريات' : 'Purchasing', icon: ShoppingBag },
+        { id: '/ocr', label: isAr ? 'قراءة فواتير الموردين' : 'Scan Supplier Bills', icon: FileCheck },
+        { id: '/inventory', label: isAr ? 'الأصناف والمستودعات' : 'Items & Warehouses', icon: Boxes },
+      ],
+    },
+    {
+      title: isAr ? 'المالية' : 'Finance',
+      items: [
+        { id: '/accounting', label: isAr ? 'الحسابات والقيود' : 'Accounts & Journals', icon: FileSpreadsheet },
+        { id: '/treasury', label: isAr ? 'الصندوق والبنوك' : 'Cash & Banks', icon: Coins },
+        { id: '/vat', label: isAr ? 'ضريبة القيمة المضافة' : 'VAT', icon: Percent },
+        { id: '/zatca', label: isAr ? 'الفوترة الإلكترونية (زاتكا)' : 'E-Invoicing (ZATCA)', icon: ShieldCheck },
+        { id: '/reports', label: isAr ? 'التقارير' : 'Reports', icon: FileBarChart },
+      ],
+    },
+    {
+      title: isAr ? 'أدوات' : 'Tools',
+      items: [
+        { id: '/documents', label: isAr ? 'النماذج والطباعة' : 'Templates & Printing', icon: Printer },
+        { id: '/import-export', label: isAr ? 'استيراد وتصدير البيانات' : 'Import & Export', icon: Upload },
+        { id: '/automation', label: isAr ? 'الأتمتة' : 'Automation', icon: Zap },
+        { id: '/assistant', label: isAr ? 'المساعد الذكي' : 'AI Assistant', icon: Sparkles },
+        { id: '/notifications', label: isAr ? 'الإشعارات' : 'Notifications', icon: Bell },
+      ],
+    },
+    {
+      title: isAr ? 'الإعدادات' : 'Settings',
+      items: [
+        { id: '/company-wizard', label: isAr ? 'بيانات المنشأة' : 'Company Profile', icon: Building2 },
+        { id: '/users', label: isAr ? 'المستخدمون والصلاحيات' : 'Users & Roles', icon: Users },
+        { id: '/security', label: isAr ? 'الأمان والنسخ الاحتياطي' : 'Security & Backups', icon: ShieldCheck },
+        { id: '/billing', label: isAr ? 'الاشتراك' : 'Subscription', icon: CreditCard },
+      ],
+    },
   ];
 
-  const secondaryNavItems = [
-    { id: '/login', label: t.nav.login },
-    { id: '/register', label: t.nav.register },
-    { id: '/forgot-password', label: t.nav.forgotPassword },
-    { id: '/maintenance', label: t.nav.maintenance },
-  ];
+  if (isPlatformAdmin) {
+    navGroups.push({
+      title: isAr ? 'إدارة المنصة' : 'Platform',
+      items: [{ id: '/superadmin', label: isAr ? 'لوحة مدير المنصة' : 'Platform Admin', icon: ShieldAlert }],
+    });
+  }
+
+  if (isDevBuild) {
+    navGroups.push({
+      title: isAr ? 'أدوات المطوّر (تظهر في بيئة التطوير فقط)' : 'Developer (dev build only)',
+      items: [
+        { id: '/design-system', label: isAr ? 'دليل التصميم' : 'Design System', icon: Palette },
+        { id: '/docs', label: isAr ? 'وثائق المشروع' : 'Project Docs', icon: BookOpen },
+        { id: '/roadmap', label: isAr ? 'مراحل البناء' : 'Build Phases', icon: Milestone },
+        { id: '/audit-tools', label: isAr ? 'أدوات تدقيق القواعد' : 'Rule Audit Tools', icon: ShieldCheck },
+      ],
+    });
+  }
+
+  const renderNavButton = (item: NavItem, onClick: () => void, compact: boolean) => {
+    const isActive = activeRoute === item.id || (item.id !== '/' && activeRoute.startsWith(item.id + '/'));
+    const Icon = item.icon;
+    return (
+      <button
+        key={item.id}
+        onClick={onClick}
+        title={compact ? item.label : undefined}
+        className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-semibold transition-colors min-h-[40px] ${
+          compact ? 'justify-center' : ''
+        } ${isActive ? 'bg-emerald-700 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}`}
+      >
+        <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+        {!compact && <span className="truncate flex-1 text-start">{item.label}</span>}
+      </button>
+    );
+  };
+
+  const renderNavGroups = (compact: boolean, afterClick?: () => void) =>
+    navGroups.map((group, gi) => (
+      <div key={group.title || gi} className={gi > 0 ? 'pt-3' : ''}>
+        {group.title && !compact && (
+          <p className="px-3 pb-1 text-[11px] font-bold text-slate-400">{group.title}</p>
+        )}
+        {group.title && compact && <div className="mx-3 mb-2 border-t border-slate-100" />}
+        <div className="space-y-0.5">
+          {group.items.map((item) =>
+            renderNavButton(
+              item,
+              () => {
+                onRouteChange(item.id);
+                afterClick?.();
+              },
+              compact,
+            ),
+          )}
+        </div>
+      </div>
+    ));
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col antialiased text-slate-900">
@@ -277,17 +362,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               onClick={() => onRouteChange('/')}
               className="cursor-pointer flex items-center gap-3"
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-700 to-teal-900 flex items-center justify-center text-white font-black text-sm shadow-md">
-                KSA
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-700 to-teal-900 flex items-center justify-center text-white shadow-md">
+                <Building2 className="w-5 h-5" />
               </div>
               <div className="hidden sm:block">
                 <div className="flex items-center gap-2">
                   <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
                     {t.common.appShortName}
                   </span>
-                  <Badge variant="success" size="sm">
-                    {t.common.phaseBadge}
-                  </Badge>
                 </div>
                 <p className="text-[11px] text-slate-400 truncate max-w-xs">{t.common.tagline}</p>
               </div>
@@ -596,58 +678,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         >
           <div className="flex-1 flex flex-col justify-between p-3 overflow-y-auto">
             {/* Primary Nav */}
-            <div className="space-y-1">
-              {navigationItems.map((item) => {
-                const isActive = activeRoute === item.id;
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => onRouteChange(item.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors min-h-[44px] ${
-                      isActive
-                        ? 'bg-emerald-700 text-white shadow-sm'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                    {!sidebarCollapsed && <span className="truncate flex-1 text-start">{item.label}</span>}
-                    {!sidebarCollapsed && item.disabledTag && (
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">
-                        {item.disabledTag}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <nav className="space-y-0">{renderNavGroups(sidebarCollapsed)}</nav>
 
-            {/* Bottom Section: Auth Shell Routes & Collapse */}
-            <div className="pt-4 border-t border-slate-100 space-y-1">
-              {!sidebarCollapsed && (
-                <div className="px-3 py-2">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">مسارات التحقق والنظام</p>
-                  <div className="grid grid-cols-2 gap-1">
-                    {secondaryNavItems.map((s) => (
-                      <button
-                        key={s.id}
-                        onClick={() => onRouteChange(s.id)}
-                        className={`text-start px-2 py-1 rounded text-[11px] font-medium truncate ${
-                          activeRoute === s.id ? 'bg-slate-200 text-slate-900' : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                      >
-                        {s.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
+            <div className="pt-4 mt-4 border-t border-slate-100">
               <button
                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                 className="w-full flex items-center justify-center p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 text-xs font-medium min-h-[44px]"
               >
-                {sidebarCollapsed ? '→' : '← طي القائمة'}
+                {sidebarCollapsed ? (isAr ? '←' : '→') : isAr ? 'طي القائمة →' : '← Collapse'}
               </button>
             </div>
           </div>
@@ -670,23 +708,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="space-y-1 flex-1">
-                {navigationItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      onRouteChange(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-xs font-semibold text-start min-h-[44px] ${
-                      activeRoute === item.id ? 'bg-emerald-700 text-white' : 'text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    <item.icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </div>
+              <nav className="flex-1">{renderNavGroups(false, () => setMobileMenuOpen(false))}</nav>
             </div>
           </div>
         )}
@@ -706,48 +728,49 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           }`}
         >
           <LayoutDashboard className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5">{t.nav.dashboard}</span>
+          <span className="text-[10px] mt-0.5">{isAr ? 'الرئيسية' : 'Home'}</span>
         </button>
 
         <button
-          onClick={() => onRouteChange('/design-system')}
+          onClick={() => onRouteChange('/sales')}
           className={`flex flex-col items-center justify-center p-1.5 rounded-lg min-h-[44px] min-w-[44px] ${
-            activeRoute === '/design-system' ? 'text-emerald-700 font-bold' : 'text-slate-500'
+            activeRoute === '/sales' ? 'text-emerald-700 font-bold' : 'text-slate-500'
           }`}
         >
-          <Palette className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5">{t.nav.designSystem}</span>
+          <FileText className="w-5 h-5" />
+          <span className="text-[10px] mt-0.5">{isAr ? 'المبيعات' : 'Sales'}</span>
         </button>
 
         <button
-          onClick={() => onRouteChange('/docs')}
+          onClick={() => onRouteChange('/inventory')}
           className={`flex flex-col items-center justify-center p-1.5 rounded-lg min-h-[44px] min-w-[44px] ${
-            activeRoute === '/docs' ? 'text-emerald-700 font-bold' : 'text-slate-500'
+            activeRoute === '/inventory' ? 'text-emerald-700 font-bold' : 'text-slate-500'
           }`}
         >
-          <BookOpen className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5">{t.nav.docs}</span>
+          <Boxes className="w-5 h-5" />
+          <span className="text-[10px] mt-0.5">{isAr ? 'المخزون' : 'Stock'}</span>
         </button>
 
         <button
-          onClick={() => onRouteChange('/audit')}
+          onClick={() => onRouteChange('/treasury')}
           className={`flex flex-col items-center justify-center p-1.5 rounded-lg min-h-[44px] min-w-[44px] ${
-            activeRoute === '/audit' ? 'text-emerald-700 font-bold' : 'text-slate-500'
+            activeRoute === '/treasury' ? 'text-emerald-700 font-bold' : 'text-slate-500'
           }`}
         >
-          <ShieldCheck className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5">{t.nav.auditTools}</span>
+          <Coins className="w-5 h-5" />
+          <span className="text-[10px] mt-0.5">{isAr ? 'الصندوق' : 'Cash'}</span>
         </button>
 
         <button
-          onClick={() => onRouteChange('/roadmap')}
+          onClick={() => onRouteChange('/reports')}
           className={`flex flex-col items-center justify-center p-1.5 rounded-lg min-h-[44px] min-w-[44px] ${
-            activeRoute === '/roadmap' ? 'text-emerald-700 font-bold' : 'text-slate-500'
+            activeRoute === '/reports' ? 'text-emerald-700 font-bold' : 'text-slate-500'
           }`}
         >
-          <Milestone className="w-5 h-5" />
-          <span className="text-[10px] mt-0.5">{t.nav.roadmap}</span>
+          <FileBarChart className="w-5 h-5" />
+          <span className="text-[10px] mt-0.5">{isAr ? 'التقارير' : 'Reports'}</span>
         </button>
+
       </nav>
 
       {/* 4. MODAL: REGISTER / ADD NEW COMPANY */}

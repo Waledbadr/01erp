@@ -807,7 +807,7 @@ export const AutomationEngineView: React.FC<AutomationEngineViewProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-                  {isAr ? 'محرك الأتمتة وقواعد الأعمال (Phase 14)' : 'Automation Engine & Business Rules'}
+                  {isAr ? 'الأتمتة' : 'Automation'}
                 </h1>
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                   {isAr ? 'نظام حي متكامل' : 'Production Ready'}

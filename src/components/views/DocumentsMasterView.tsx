@@ -50,9 +50,8 @@ export const DocumentsMasterView: React.FC<DocumentsMasterViewProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-black text-slate-900">
-                محرك المستندات والطباعة والمشاركة (Phase 13 Engine)
+                النماذج والطباعة
               </h1>
-              <Badge variant="success" size="sm">ZATCA Compliant</Badge>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               توليد ملفات PDF حقيقية، قوالب قياسية A4 وحراري 80 ملم، مشاركة آمنة، خادم SMTP، وربط واتساب

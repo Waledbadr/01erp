@@ -1299,7 +1299,7 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
                   </h3>
                   <p className="text-xs text-slate-500">
                     {isAr
-                      ? 'خصم ضريبة المدخلات 15%، وتحديث تكلفة المخزون بالمتوسط المرجح WAC (Rule I2)'
+                      ? 'خصم ضريبة المدخلات 15%، وتحديث تكلفة المخزون بالمتوسط المرجح WAC'
                       : 'Input VAT 15% deduction and stock valuation under perpetual WAC'}
                   </p>
                 </div>
@@ -1588,7 +1588,7 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
                 />
                 <label htmlFor="postImmediatelyCheck" className="text-xs text-slate-800 font-medium cursor-pointer">
                   {isAr
-                    ? 'ترحيل الفاتورة فوراً وتوليد القيد المحاسبي في دفتر الأستاذ العام وتحديث رصيد وتكلفة المخزون (Rule G1 & I2)'
+                    ? 'ترحيل الفاتورة فوراً وتوليد القيد المحاسبي في دفتر الأستاذ العام وتحديث رصيد وتكلفة المخزون'
                     : 'Post immediately to General Ledger, update stock on hand, and recalculate WAC cost'}
                 </label>
               </div>
@@ -2023,7 +2023,7 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
               <div className="bg-slate-900 text-slate-100 p-4 rounded-xl space-y-3 font-mono text-xs">
                 <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                   <span className="font-bold text-amber-400">
-                    {isAr ? 'قيد اليومية المحاسبي الثنائي المولد (Rule G1 / G7):' : 'Double-Entry Balanced GL Journal (G1):'}
+                    {isAr ? 'قيد اليومية المحاسبي الثنائي المولد:' : 'Double-Entry Balanced GL Journal:'}
                   </span>
                   <span className="text-emerald-400">{isAr ? 'متوازن دائن = مدين' : 'Debits = Credits'}</span>
                 </div>

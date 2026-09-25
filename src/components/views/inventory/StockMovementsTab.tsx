@@ -134,7 +134,7 @@ export const StockMovementsTab: React.FC<StockMovementsTabProps> = ({
             <History className="w-5 h-5 text-neutral-600" />
             <div>
               <h3 className="font-semibold text-neutral-900">
-                {isAr ? 'سجل حركات المخزون غير القابل للتعديل (Rule I1 / I5)' : 'Append-Only Stock Ledger'}
+                {isAr ? 'سجل حركات المخزون غير القابل للتعديل' : 'Append-Only Stock Ledger'}
               </h3>
               <p className="text-xs text-neutral-500">
                 {isAr
@@ -262,7 +262,7 @@ export const StockMovementsTab: React.FC<StockMovementsTabProps> = ({
                 <th className="py-3 px-4 text-end font-medium">{isAr ? 'تكلفة الوحدة (ر.س)' : 'Unit Cost'}</th>
                 <th className="py-3 px-4 text-end font-medium">{isAr ? 'المتوسط المرجح الجديد' : 'Resulting WAC'}</th>
                 <th className="py-3 px-4 text-end font-medium">{isAr ? 'الرصيد الناتج' : 'Resulting Stock'}</th>
-                <th className="py-3 px-4 text-start font-medium">{isAr ? 'المستند المصدري (Rule I1)' : 'Source Document'}</th>
+                <th className="py-3 px-4 text-start font-medium">{isAr ? 'المستند المصدري' : 'Source Document'}</th>
                 <th className="py-3 px-4 text-start font-medium">{isAr ? 'البيان / السبب' : 'Reason / Notes'}</th>
               </tr>
             </thead>

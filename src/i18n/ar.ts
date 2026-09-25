@@ -1,8 +1,8 @@
 export const ar = {
   common: {
-    appName: 'منصة تخطيط الموارد وحلول زاتكا السحابية',
-    appShortName: 'سعودي ERP',
-    tagline: 'النظام السحابي المتكامل للمحاسبة والمخزون والفوترة الإلكترونية (المرحلة الثانية)',
+    appName: 'سحاب ERP',
+    appShortName: 'سحاب ERP',
+    tagline: 'المحاسبة والمخزون والفوترة الإلكترونية',
     search: 'بحث...',
     filter: 'تصفية',
     clearFilters: 'مسح التصفية',

@@ -405,7 +405,7 @@ export const SecurityAuditBackupView: React.FC<{
         toast.showToast({
           type: rep.status === 'PASSED' ? 'success' : 'error',
           title: rep.status === 'PASSED' ? (isAr ? 'اجتازت النسخة الفحص' : 'Verification Passed') : (isAr ? 'فشل الفحص' : 'Verification Failed'),
-          message: isAr ? 'تم التأكد من صحة البصمة التشفيرية وتوازن قيود اليومية.' : 'Checksum and Rule G1 GL Invariant verified.',
+          message: isAr ? 'تم التأكد من صحة البصمة التشفيرية وتوازن قيود اليومية.' : 'Checksum and ledger balance verified.',
         });
       }
     } catch {
@@ -491,7 +491,7 @@ export const SecurityAuditBackupView: React.FC<{
               </div>
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold text-slate-900">
-                  {isAr ? 'مركز الأمان والتدقيق والتعافي من الكوارث' : 'Security, Audit Trail & Disaster Recovery'}
+                  {isAr ? 'الأمان والنسخ الاحتياطي' : 'Security & Backups'}
                 </h1>
                 <p className="text-xs sm:text-sm text-slate-500">
                   {isAr
@@ -506,7 +506,7 @@ export const SecurityAuditBackupView: React.FC<{
                 SHA-256 Tamper-Evident Chain
               </Badge>
               <Badge variant="success" className="font-mono text-[11px]">
-                Rule G1 Invariant Active
+                Balanced Ledger Check
               </Badge>
               <Badge variant="default" className="font-mono text-[11px]">
                 Multi-Tenant Isolation
@@ -850,7 +850,7 @@ export const SecurityAuditBackupView: React.FC<{
                 <div className="flex items-center gap-2">
                   <Lock className="w-5 h-5 text-emerald-600" />
                   <h3 className="font-bold text-slate-900 text-sm">
-                    {isAr ? 'حجب التكلفة وهوامش الربح (Rule C)' : 'Cost Redaction & Masking (Rule C)'}
+                    {isAr ? 'حجب التكلفة وهوامش الربح' : 'Cost Redaction & Masking'}
                   </h3>
                 </div>
                 <Badge variant="success">{isAr ? 'نشط تلقائياً' : 'Enforced'}</Badge>
@@ -1433,7 +1433,7 @@ export const SecurityAuditBackupView: React.FC<{
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 space-y-1 font-mono text-[11px]">
               <div>Verified At: {verificationReport.verifiedAt}</div>
               <div>Checksum Matched: {verificationReport.checksumMatches ? 'YES (100%)' : 'NO'}</div>
-              <div>Rule G1 Balanced: {verificationReport.glDebitsEqualCredits ? 'YES (Dr === Cr)' : 'NO'}</div>
+              <div>Ledger balanced: {verificationReport.glDebitsEqualCredits ? 'YES (Dr === Cr)' : 'NO'}</div>
             </div>
 
             <div className="flex justify-end pt-2">
