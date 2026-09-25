@@ -81,3 +81,24 @@ export async function call(
     return { status: res.status, body: text };
   }
 }
+
+/**
+ * Creates (or recreates) a dedicated database for one test file, next to the database named in
+ * TEST_DATABASE_URL, and returns its URL. Test files run in parallel, so they must never share
+ * (and wipe) the same database.
+ */
+export async function prepareTestDatabase(baseUrl: string, suffix: string): Promise<string> {
+  const { default: pg } = await import('pg');
+  const url = new URL(baseUrl);
+  const name = `${url.pathname.replace(/^\//, '') || 'postgres'}_${suffix}`.replace(/[^a-zA-Z0-9_]/g, '_');
+  const admin = new pg.Client({ connectionString: baseUrl });
+  await admin.connect();
+  try {
+    await admin.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
+    await admin.query(`CREATE DATABASE "${name}"`);
+  } finally {
+    await admin.end();
+  }
+  url.pathname = `/${name}`;
+  return url.toString();
+}

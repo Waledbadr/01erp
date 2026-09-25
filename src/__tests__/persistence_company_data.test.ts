@@ -7,15 +7,16 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import pg from 'pg';
-import { startApi, stopApi, call, type ApiProcess } from './helpers/apiProcess.js';
+import { startApi, stopApi, call, prepareTestDatabase, type ApiProcess } from './helpers/apiProcess.js';
 
 const DB_URL = process.env.TEST_DATABASE_URL;
 
 describe.skipIf(!DB_URL)('Company data persistence on PostgreSQL', () => {
   let pool: pg.Pool;
   const running: ApiProcess[] = [];
+  let dbUrl = '';
   const start = async () => {
-    const api = await startApi(DB_URL!);
+    const api = await startApi(dbUrl);
     running.push(api);
     return api;
   };
@@ -32,8 +33,8 @@ describe.skipIf(!DB_URL)('Company data persistence on PostgreSQL', () => {
   let invoiceNumber = '';
 
   beforeAll(async () => {
-    pool = new pg.Pool({ connectionString: DB_URL });
-    await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
+    dbUrl = await prepareTestDatabase(DB_URL!, 'company_data');
+    pool = new pg.Pool({ connectionString: dbUrl });
   }, 60_000);
 
   afterAll(async () => {
