@@ -5,15 +5,43 @@ import { env } from '../core/env.js';
 import { logger } from '../core/logger.js';
 
 let pool: pg.Pool | null = null;
+
+/**
+ * Hosted Postgres URLs (Supabase, Vercel Postgres) carry `sslmode=require`. Current `pg` treats
+ * that as `verify-full` and lets it override the `ssl` option, so Node rejects the provider's
+ * certificate chain ("self-signed certificate in certificate chain"). SSL settings are therefore
+ * removed from the URL and set here:
+ *   - local host: no SSL
+ *   - DATABASE_CA_CERT set (PEM of the provider's CA): encrypted AND certificate verified
+ *   - otherwise: encrypted, certificate not verified (same as the original configuration)
+ */
+export function buildConnectionOptions(rawUrl: string): { connectionString: string; ssl: false | { rejectUnauthorized: boolean; ca?: string } } {
+  let connectionString = rawUrl;
+  let host = '';
+  try {
+    const url = new URL(rawUrl);
+    host = url.hostname;
+    for (const key of ['sslmode', 'sslrootcert', 'sslcert', 'sslkey', 'uselibpqcompat', 'sslnegotiation']) {
+      url.searchParams.delete(key);
+    }
+    connectionString = url.toString();
+  } catch {
+    // Not a URL (e.g. key=value DSN): leave it unchanged.
+  }
+  const isLocal = host === 'localhost' || host === '127.0.0.1' || host === '::1' || /localhost|127\.0\.0\.1/.test(host);
+  if (isLocal) return { connectionString, ssl: false };
+  const ca = process.env.DATABASE_CA_CERT?.replace(/\\n/g, '\n');
+  return { connectionString, ssl: ca ? { rejectUnauthorized: true, ca } : { rejectUnauthorized: false } };
+}
 let dbInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
 export function getDbPool(): pg.Pool | null {
   if (!pool && env.DATABASE_URL) {
     try {
-      const isLocal = env.DATABASE_URL.includes('localhost') || env.DATABASE_URL.includes('127.0.0.1');
+      const { connectionString, ssl } = buildConnectionOptions(env.DATABASE_URL);
       pool = new pg.Pool({
-        connectionString: env.DATABASE_URL,
-        ssl: isLocal ? false : { rejectUnauthorized: false },
+        connectionString,
+        ssl,
         max: 10,
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 10000,
