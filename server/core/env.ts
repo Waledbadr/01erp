@@ -15,15 +15,25 @@ export function validateEnv(): AppEnv {
   const port = 3000;
 
   const nodeEnv = (process.env.NODE_ENV || 'development') as 'development' | 'production' | 'test';
-  const jwtSecret = process.env.JWT_SECRET || 'dev-local-jwt-secret-min-32-chars-saudi-erp';
   const appUrl = process.env.APP_URL || `http://localhost:${port}`;
   const zatcaEnv = (process.env.ZATCA_ENV || 'simulation') as 'sandbox' | 'simulation' | 'production';
   const logLevel = (process.env.LOG_LEVEL || 'info') as 'debug' | 'info' | 'warn' | 'error';
 
+  const dbUrl =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL_NON_POOLING ||
+    process.env.POSTGRES_URL ||
+    process.env.POSTGRES_PRISMA_URL;
+
+  const jwtSecret =
+    process.env.JWT_SECRET ||
+    process.env.SUPABASE_JWT_SECRET ||
+    'dev-local-jwt-secret-min-32-chars-saudi-erp';
+
   return {
     PORT: port,
     NODE_ENV: nodeEnv,
-    DATABASE_URL: process.env.DATABASE_URL,
+    DATABASE_URL: dbUrl,
     JWT_SECRET: jwtSecret,
     APP_URL: appUrl,
     ZATCA_ENV: zatcaEnv,

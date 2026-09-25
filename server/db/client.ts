@@ -10,11 +10,13 @@ let dbInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
 export function getDbPool(): pg.Pool | null {
   if (!pool && env.DATABASE_URL) {
     try {
+      const isLocal = env.DATABASE_URL.includes('localhost') || env.DATABASE_URL.includes('127.0.0.1');
       pool = new pg.Pool({
         connectionString: env.DATABASE_URL,
+        ssl: isLocal ? false : { rejectUnauthorized: false },
         max: 10,
         idleTimeoutMillis: 30000,
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: 10000,
       });
 
       pool.on('error', (err) => {
