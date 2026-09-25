@@ -35,5 +35,8 @@ jobs:
       - name: Run Post-Deploy Smoke Test Suite
         run: npm run test:smoke
 
+      - name: Verify Native Node ESM API Startup
+        run: npm run test:api-esm
+
       - name: Build Application
         run: npm run build

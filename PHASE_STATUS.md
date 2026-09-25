@@ -921,3 +921,7 @@ This document provides official tracking for every implementation phase of the S
 
 
 
+
+## 2026-09-25: Vercel ESM startup fix (TASK-005)
+
+The production log identified an extensionless runtime import in src/lib/treasury.ts. Native Node could not resolve ./accounting and terminated the API function before health or registration handlers ran. Added the emitted .js extension and a native, unbundled ESM startup/HTTP regression check in CI. The same failure was reproduced locally before the fix; after it, health returns 200, invalid registration 400, and synthetic registration 201. Typecheck and production build passed locally. This entry does not certify a phase or change existing persistence behavior. Deployment remains pending; no GitHub push or Vercel redeploy was performed.

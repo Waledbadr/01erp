@@ -8,7 +8,7 @@
  * - VAT Law: 15% Input/Output VAT segregation on petty cash & expense vouchers
  */
 
-import { toHalalasInt, fromHalalasInt, roundHalalas } from './accounting';
+import { toHalalasInt, fromHalalasInt, roundHalalas } from './accounting.js';
 
 // ============================================================================
 // 1. TREASURY ACCOUNTS & VAULTS (الخزائن والحسابات البنكية والعهد)

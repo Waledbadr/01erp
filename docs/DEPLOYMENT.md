@@ -60,3 +60,11 @@ For deploying to Vercel (Front-end SPA / Static Hosting):
 5. **Configuration**: Managed via `vercel.json` with SPA routing rewrite (`/*` -> `/index.html`).
 6. **Environment Variables**: Set any public or client variables (`VITE_*`) in the Vercel Project Dashboard.
 
+
+## Vercel native ESM startup regression (2026-09-25)
+
+Vercel reported `ERR_MODULE_NOT_FOUND` for `src/lib/accounting` imported by `src/lib/treasury.js`. Relative runtime imports must include the emitted `.js` extension. Vite/esbuild bundling and TypeScript loaders can resolve extensionless imports and therefore hide this production failure.
+
+Run `npm run test:api-esm` before deployment. It transpiles the API and shared server libraries into separate JavaScript files in a disposable project cache directory, then launches native Node without a TypeScript loader. It checks startup, HTTP health (200), invalid registration (400), and synthetic registration (201). No production database or external service is used. The check also runs in CI.
+
+The extension fix must be deployed to Vercel before the live site changes. Local success does not claim a production redeployment. This fix does not change the existing in-memory registration storage.
