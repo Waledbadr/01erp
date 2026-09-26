@@ -12,7 +12,8 @@ export interface ApiProcess {
 }
 
 const ROOT = path.resolve(__dirname, '../../..');
-let nextPort = 4700 + Math.floor(Math.random() * 800);
+// High range: 4700-5500 included 5432 (PostgreSQL in CI) and caused EADDRINUSE.
+let nextPort = 20000 + Math.floor(Math.random() * 20000);
 
 export async function startApi(databaseUrl: string): Promise<ApiProcess> {
   const port = nextPort++;
