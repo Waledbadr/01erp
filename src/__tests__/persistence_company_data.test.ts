@@ -63,6 +63,11 @@ describe.skipIf(!DB_URL)('Company data persistence on PostgreSQL', () => {
     expect(cust.status).toBe(201);
     customerId = cust.body.id;
 
+    const pa = await call(a, 'POST', '/api/v1/sales/price-agreements', {
+      customerId, itemId, uomId: item.body.item.units[0].id, agreedPriceSar: 115,
+    }, token);
+    expect(pa.status).toBe(201);
+
     const wh = await call(a, 'GET', '/api/v1/inventory/warehouses', undefined, token);
     warehouseId = (wh.body.warehouses ?? wh.body)[0].id;
 
@@ -89,6 +94,10 @@ describe.skipIf(!DB_URL)('Company data persistence on PostgreSQL', () => {
     expect(items.body.items.map((i: any) => i.sku)).toContain('COF-1');
     const customers = await call(b, 'GET', '/api/v1/sales/customers', undefined, token);
     expect(customers.body.customers.map((c: any) => c.id)).toContain(customerId);
+    const agreements = await call(b, 'GET', '/api/v1/sales/price-agreements', undefined, token);
+    const agreement = agreements.body.find((x: any) => x.customerId === customerId && x.itemId === itemId);
+    expect(agreement?.agreedPriceSar).toBe(115);
+    expect(agreement?.status).toBe('ACTIVE');
     const invoices = await call(b, 'GET', '/api/v1/sales/invoices', undefined, token);
     const inv = invoices.body.find((i: any) => i.invoiceNumber === invoiceNumber);
     expect(inv.status).toBe('POSTED');
