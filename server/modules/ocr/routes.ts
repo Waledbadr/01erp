@@ -10,23 +10,19 @@ import {
   ocrFilesStore,
 } from './ocrService.js';
 import { centralStore } from '../../core/tenantGuard.js';
+import { requireAuth } from '../../core/authMiddleware.js';
 
 export const ocrRouter = Router();
 
-// Helper to extract authenticated user session context
+// Every OCR endpoint needs a signed-in user.
+ocrRouter.use(requireAuth);
+
+// Company and user from the signed-in session only. (The old fallback used a shared
+// 'tenant-default', and `user.id` — a field req.user does not have — so every audit entry
+// was attributed to 'usr-admin-1'.)
 function getSessionContext(req: Request) {
-  const user = (req as any).user || {
-    id: 'usr-admin-1',
-    tenantId: 'tenant-default',
-    role: 'ACCOUNTANT',
-    email: 'accountant@enterprise.sa',
-  };
-  return {
-    userId: user.id || 'usr-admin-1',
-    tenantId: user.tenantId || 'tenant-default',
-    role: user.role || 'ACCOUNTANT',
-    userEmail: user.email || 'accountant@enterprise.sa',
-  };
+  const ctx = req.tenantContext!;
+  return { userId: ctx.userId, tenantId: ctx.tenantId, role: ctx.role, userEmail: ctx.userEmail };
 }
 
 /**

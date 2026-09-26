@@ -253,8 +253,9 @@ export class SharingService {
       return { link, status: 'EXPIRED' };
     }
 
-    // 3. Tenant cross-tenant isolation check (if accessingTenantId provided and login required)
-    if (!link.allowNoLogin && clientContext?.accessingTenantId && clientContext.accessingTenantId !== link.tenantId) {
+    // 3. Login-only links: the viewer must be signed in to the owning company. A missing
+    //    accessingTenantId (anonymous viewer) used to pass this check.
+    if (!link.allowNoLogin && clientContext?.accessingTenantId !== link.tenantId) {
       return { link, status: 'UNAUTHORIZED' };
     }
 

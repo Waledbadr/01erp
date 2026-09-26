@@ -1,4 +1,5 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
+import { requireAuth } from '../../core/authMiddleware.js';
 import { DocumentTemplateService } from './documentTemplateService.js';
 import { PdfEngineService } from './pdfEngineService.js';
 import { SharingService } from './sharingService.js';
@@ -7,15 +8,21 @@ import { DocumentType, DocumentDataPayload, PaperSize } from './types.js';
 
 export const documentsRouter = Router();
 
-// Helper to get tenant ID from request context
+// Every documents endpoint needs a signed-in user, except opening a shared link
+// (GET /share/secure-link/:token), which is how customers view a shared document.
+documentsRouter.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.method === 'GET' && /^\/share\/secure-link\/[^/]+\/?$/.test(req.path)) return next();
+  return requireAuth(req, res, next);
+});
+
+// Company and user from the signed-in session only (previously fell back to the
+// x-tenant-id header and a shared 'default-tenant-ksa').
 function getTenantId(req: Request): string {
-  const user = (req as any).user;
-  return user?.tenantId || (req.headers['x-tenant-id'] as string) || 'default-tenant-ksa';
+  return req.tenantContext!.tenantId;
 }
 
 function getUserId(req: Request): string {
-  const user = (req as any).user;
-  return user?.id || 'usr-system-admin';
+  return req.tenantContext!.userId;
 }
 
 // ==========================================
@@ -192,7 +199,7 @@ documentsRouter.get('/share/secure-link/:token', (req: Request, res: Response) =
   const clientContext = {
     ip: req.ip || (req.headers['x-forwarded-for'] as string) || '127.0.0.1',
     userAgent: req.get('user-agent') || 'Browser',
-    accessingTenantId: (req as any).user?.tenantId,
+    accessingTenantId: req.tenantContext?.tenantId,
   };
 
   try {

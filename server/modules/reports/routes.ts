@@ -6,6 +6,7 @@
  * - Rule C cost scrubber on unauthorized roles
  */
 
+import { requireAuth } from '../../core/authMiddleware.js';
 import { Router, Request, Response } from 'express';
 import { REPORT_DEFINITIONS, ReportType, generateReportCsv, generateReportExcelHtml } from '../../../src/lib/reports.js';
 import { ReportService } from './reportService.js';
@@ -13,15 +14,14 @@ import { centralStore } from '../../core/tenantGuard.js';
 
 export const reportsRouter = Router();
 
-// Helper to extract tenantId from session or header
-function resolveTenantId(req: Request): string {
-  if (req.tenantContext?.tenantId) return req.tenantContext.tenantId;
-  if (req.headers['x-tenant-id']) return String(req.headers['x-tenant-id']);
-  if (req.query.tenantId) return String(req.query.tenantId);
+// Every reports endpoint needs a signed-in user.
+reportsRouter.use(requireAuth);
 
-  // Default to first tenant in store if present
-  const firstTenant = Array.from(centralStore.tenants.keys())[0];
-  return firstTenant || 'system-default-tenant';
+// Helper to extract tenantId from session or header
+// The company always comes from the signed-in session (router requires auth).
+// Never from x-tenant-id / ?tenantId=, and never "the first company in memory".
+function resolveTenantId(req: Request): string {
+  return req.tenantContext!.tenantId;
 }
 
 function resolveUser(req: Request) {

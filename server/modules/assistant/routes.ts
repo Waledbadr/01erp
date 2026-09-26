@@ -15,27 +15,23 @@ import {
 } from './assistantService.js';
 import { centralStore, TenantContext } from '../../core/tenantGuard.js';
 import { AssistantQueryContext } from './types.js';
+import { requireAuth } from '../../core/authMiddleware.js';
 
 export const assistantRouter = Router();
 
-// Helper to extract authenticated user & tenant context
+// Every assistant endpoint needs a signed-in user.
+assistantRouter.use(requireAuth);
+
+// The company, user and permissions come only from the signed-in session. This used to fall
+// back to the x-tenant-id header and a built-in ADMIN user with '*' permissions.
 function extractTenantContext(req: Request): TenantContext {
-  const user = (req as any).user || {
-    id: 'usr-admin-1',
-    tenantId: (req.headers['x-tenant-id'] as string) || 'tenant-default',
-    role: 'ADMIN',
-    email: 'admin@enterprise.sa',
-    permissions: ['*'],
-  };
-
-  const tenantId = (req.headers['x-tenant-id'] as string) || user.tenantId || 'tenant-default';
-
+  const ctx = req.tenantContext!;
   return {
-    userId: user.id || 'usr-admin-1',
-    tenantId,
-    role: user.role || 'ADMIN',
-    userEmail: user.email || 'admin@enterprise.sa',
-    permissions: user.permissions || ['*'],
+    userId: ctx.userId,
+    tenantId: ctx.tenantId,
+    role: ctx.role,
+    userEmail: ctx.userEmail,
+    permissions: ctx.permissions,
   };
 }
 

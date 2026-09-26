@@ -10,14 +10,14 @@ import { ImportTemplate, ImportMode } from './types.js';
 
 export const importExportRouter = Router();
 
+// Every import/export endpoint needs a signed-in user.
+importExportRouter.use(requireAuth);
+
+// Company and user from the signed-in session only. The x-tenant-id header used to take
+// precedence, letting any signed-in user import into or export from another company.
 function getUserFromReq(req: Request) {
-  const user = (req as any).user || {
-    id: 'user-admin-default',
-    email: 'admin@saudi-erp.sa',
-    tenantId: (req.headers['x-tenant-id'] as string) || 'tenant-default',
-  };
-  const tenantId = (req.headers['x-tenant-id'] as string) || user.tenantId || 'tenant-default';
-  return { tenantId, userId: user.id || 'user-admin-default', userEmail: user.email || 'admin@saudi-erp.sa' };
+  const ctx = req.tenantContext!;
+  return { tenantId: ctx.tenantId, userId: ctx.userId, userEmail: ctx.userEmail };
 }
 
 // =========================================================================

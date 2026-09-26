@@ -6,8 +6,14 @@
 import { Router, Request, Response } from 'express';
 import { PosService } from './posService.js';
 import { logger } from '../../core/logger.js';
+import { requireAuth } from '../../core/authMiddleware.js';
 
 export const posRouter = Router();
+
+// Every POS endpoint needs a signed-in user; registers, shifts and orders belong to the
+// session's company (tenantId in the query/body is ignored; it used to default to a shared
+// 'default-tenant' for every company).
+posRouter.use(requireAuth);
 
 // Sample fast POS catalog items for direct POS terminal search & touch-grid
 const POS_DEFAULT_CATALOG = [
@@ -155,7 +161,7 @@ posRouter.get('/catalog', (req: Request, res: Response) => {
  * 2. Get Registers list
  */
 posRouter.get('/registers', (req: Request, res: Response) => {
-  const tenantId = (req.query.tenantId as string) || 'default-tenant';
+  const tenantId = req.tenantContext!.tenantId;
   const registers = PosService.getRegisters(tenantId);
   res.json({
     success: true,
@@ -167,7 +173,7 @@ posRouter.get('/registers', (req: Request, res: Response) => {
  * 3. Get Active Shift for Register
  */
 posRouter.get('/shifts/active/:registerId', (req: Request, res: Response) => {
-  const tenantId = (req.query.tenantId as string) || 'default-tenant';
+  const tenantId = req.tenantContext!.tenantId;
   const registerId = req.params.registerId;
   const shift = PosService.getActiveShift(tenantId, registerId);
   const register = PosService.getRegisterById(tenantId, registerId);
@@ -185,7 +191,7 @@ posRouter.get('/shifts/active/:registerId', (req: Request, res: Response) => {
  */
 posRouter.post('/shifts/open', (req: Request, res: Response) => {
   try {
-    const tenantId = (req.body.tenantId as string) || 'default-tenant';
+    const tenantId = req.tenantContext!.tenantId;
     const { registerId, cashierId, cashierName, cashierRole, openingFloatSar } = req.body;
 
     if (!registerId) {
@@ -218,7 +224,7 @@ posRouter.post('/shifts/open', (req: Request, res: Response) => {
  */
 posRouter.post('/shifts/cash-movement', (req: Request, res: Response) => {
   try {
-    const tenantId = (req.body.tenantId as string) || 'default-tenant';
+    const tenantId = req.tenantContext!.tenantId;
     const { shiftId, type, amountSar, reason, performedBy } = req.body;
 
     if (!shiftId || !type || !amountSar) {
@@ -251,7 +257,7 @@ posRouter.post('/shifts/cash-movement', (req: Request, res: Response) => {
  */
 posRouter.get('/shifts/:shiftId/x-report', (req: Request, res: Response) => {
   try {
-    const tenantId = (req.query.tenantId as string) || 'default-tenant';
+    const tenantId = req.tenantContext!.tenantId;
     const shiftId = req.params.shiftId;
     const report = PosService.generateXReport(tenantId, shiftId);
 
@@ -272,7 +278,7 @@ posRouter.get('/shifts/:shiftId/x-report', (req: Request, res: Response) => {
  */
 posRouter.post('/shifts/:shiftId/close', (req: Request, res: Response) => {
   try {
-    const tenantId = (req.body.tenantId as string) || 'default-tenant';
+    const tenantId = req.tenantContext!.tenantId;
     const shiftId = req.params.shiftId;
     const { actualCashCountedSar, discrepancyReason, supervisorApprovalId, supervisorNotes } = req.body;
 
@@ -306,7 +312,7 @@ posRouter.post('/shifts/:shiftId/close', (req: Request, res: Response) => {
  */
 posRouter.post('/orders', (req: Request, res: Response) => {
   try {
-    const tenantId = (req.body.tenantId as string) || 'default-tenant';
+    const tenantId = req.tenantContext!.tenantId;
     const order = PosService.processOrder(tenantId, req.body);
 
     res.json({
@@ -326,7 +332,7 @@ posRouter.post('/orders', (req: Request, res: Response) => {
  */
 posRouter.post('/orders/sync', (req: Request, res: Response) => {
   try {
-    const tenantId = (req.body.tenantId as string) || 'default-tenant';
+    const tenantId = req.tenantContext!.tenantId;
     const { offlineOrders } = req.body;
 
     if (!Array.isArray(offlineOrders)) {
@@ -353,7 +359,7 @@ posRouter.post('/orders/sync', (req: Request, res: Response) => {
  * 10. List Orders for Shift
  */
 posRouter.get('/orders', (req: Request, res: Response) => {
-  const tenantId = (req.query.tenantId as string) || 'default-tenant';
+  const tenantId = req.tenantContext!.tenantId;
   const shiftId = req.query.shiftId as string | undefined;
   const registerId = req.query.registerId as string | undefined;
 
@@ -369,7 +375,7 @@ posRouter.get('/orders', (req: Request, res: Response) => {
  */
 posRouter.post('/held-carts', (req: Request, res: Response) => {
   try {
-    const tenantId = (req.body.tenantId as string) || 'default-tenant';
+    const tenantId = req.tenantContext!.tenantId;
     const { registerId, cashierId, items, customerName, note } = req.body;
 
     const held = PosService.holdCart(tenantId, registerId, cashierId, items, customerName, note);
@@ -386,7 +392,7 @@ posRouter.post('/held-carts', (req: Request, res: Response) => {
 });
 
 posRouter.get('/held-carts', (req: Request, res: Response) => {
-  const tenantId = (req.query.tenantId as string) || 'default-tenant';
+  const tenantId = req.tenantContext!.tenantId;
   const registerId = req.query.registerId as string | undefined;
   const heldCarts = PosService.getHeldCarts(tenantId, registerId);
 
@@ -398,7 +404,7 @@ posRouter.get('/held-carts', (req: Request, res: Response) => {
 
 posRouter.post('/held-carts/:id/resume', (req: Request, res: Response) => {
   try {
-    const tenantId = (req.body.tenantId as string) || 'default-tenant';
+    const tenantId = req.tenantContext!.tenantId;
     const resumed = PosService.resumeHeldCart(tenantId, req.params.id);
 
     res.json({
@@ -414,7 +420,7 @@ posRouter.post('/held-carts/:id/resume', (req: Request, res: Response) => {
 });
 
 posRouter.delete('/held-carts/:id', (req: Request, res: Response) => {
-  const tenantId = (req.query.tenantId as string) || 'default-tenant';
+  const tenantId = req.tenantContext!.tenantId;
   const deleted = PosService.deleteHeldCart(tenantId, req.params.id);
 
   res.json({

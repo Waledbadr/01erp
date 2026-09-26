@@ -6,8 +6,13 @@
 import { Router, Request, Response } from 'express';
 import { AutomationService } from './automationService.js';
 import { TriggerType } from './types.js';
+import { requireAuth } from '../../core/authMiddleware.js';
 
 export const automationRouter = Router();
+
+// Every automation endpoint needs a signed-in user; rules belong to the session's company.
+// (Previously every company shared one 'tenant-default' rule set.)
+automationRouter.use(requireAuth);
 
 // Sample testing payloads for every trigger type
 const SAMPLE_PAYLOADS: Record<TriggerType, Record<string, any>> = {
@@ -112,7 +117,7 @@ const SAMPLE_PAYLOADS: Record<TriggerType, Record<string, any>> = {
  * GET /api/v1/automation/rules
  */
 automationRouter.get('/rules', (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   const rules = AutomationService.getRules(tenantId);
   res.json({ status: 'ok', data: rules, count: rules.length });
 });
@@ -121,7 +126,7 @@ automationRouter.get('/rules', (req: Request, res: Response) => {
  * GET /api/v1/automation/rules/:id
  */
 automationRouter.get('/rules/:id', (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   const rule = AutomationService.getRuleById(tenantId, req.params.id);
   if (!rule) {
     return res.status(404).json({ status: 'error', message: 'Rule not found' });
@@ -133,7 +138,7 @@ automationRouter.get('/rules/:id', (req: Request, res: Response) => {
  * POST /api/v1/automation/rules
  */
 automationRouter.post('/rules', (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   try {
     const saved = AutomationService.saveRule(tenantId, req.body);
     res.status(201).json({ status: 'ok', data: saved });
@@ -146,7 +151,7 @@ automationRouter.post('/rules', (req: Request, res: Response) => {
  * PUT /api/v1/automation/rules/:id
  */
 automationRouter.put('/rules/:id', (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   try {
     const saved = AutomationService.saveRule(tenantId, { ...req.body, id: req.params.id });
     res.json({ status: 'ok', data: saved });
@@ -159,7 +164,7 @@ automationRouter.put('/rules/:id', (req: Request, res: Response) => {
  * PATCH /api/v1/automation/rules/:id/toggle
  */
 automationRouter.patch('/rules/:id/toggle', (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   try {
     const rule = AutomationService.toggleRule(tenantId, req.params.id);
     res.json({ status: 'ok', data: rule });
@@ -172,7 +177,7 @@ automationRouter.patch('/rules/:id/toggle', (req: Request, res: Response) => {
  * DELETE /api/v1/automation/rules/:id
  */
 automationRouter.delete('/rules/:id', (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   const deleted = AutomationService.deleteRule(tenantId, req.params.id);
   if (!deleted) {
     return res.status(404).json({ status: 'error', message: 'Rule not found' });
@@ -184,7 +189,7 @@ automationRouter.delete('/rules/:id', (req: Request, res: Response) => {
  * POST /api/v1/automation/rules/dry-run
  */
 automationRouter.post('/rules/dry-run', (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   const { rule, ruleId, samplePayload } = req.body;
 
   let ruleToTest = rule;
@@ -205,7 +210,7 @@ automationRouter.post('/rules/dry-run', (req: Request, res: Response) => {
  * POST /api/v1/automation/trigger
  */
 automationRouter.post('/trigger', async (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   const { trigger, payload } = req.body;
 
   if (!trigger) {
@@ -224,7 +229,7 @@ automationRouter.post('/trigger', async (req: Request, res: Response) => {
  * GET /api/v1/automation/history
  */
 automationRouter.get('/history', (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   const { ruleId, status, trigger } = req.query;
 
   const history = AutomationService.getHistory(tenantId, {
@@ -240,7 +245,7 @@ automationRouter.get('/history', (req: Request, res: Response) => {
  * POST /api/v1/automation/history/:runId/retry
  */
 automationRouter.post('/history/:runId/retry', async (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   const { actionId } = req.body;
 
   if (!actionId) {
@@ -259,7 +264,7 @@ automationRouter.post('/history/:runId/retry', async (req: Request, res: Respons
  * GET /api/v1/automation/tasks
  */
 automationRouter.get('/tasks', (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   const tasks = AutomationService.getAutomationTasks(tenantId);
   res.json({ status: 'ok', data: tasks });
 });
@@ -268,7 +273,7 @@ automationRouter.get('/tasks', (req: Request, res: Response) => {
  * GET /api/v1/automation/drafts
  */
 automationRouter.get('/drafts', (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   const drafts = AutomationService.getAutomationDrafts(tenantId);
   res.json({ status: 'ok', data: drafts });
 });
@@ -277,7 +282,7 @@ automationRouter.get('/drafts', (req: Request, res: Response) => {
  * GET /api/v1/automation/webhooks
  */
 automationRouter.get('/webhooks', (req: Request, res: Response) => {
-  const tenantId = (req as any).tenantId || 'tenant-default';
+  const tenantId = req.tenantContext!.tenantId;
   const webhooks = AutomationService.getWebhookLogs(tenantId);
   res.json({ status: 'ok', data: webhooks });
 });

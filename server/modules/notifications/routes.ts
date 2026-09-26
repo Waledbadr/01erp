@@ -9,20 +9,17 @@ import { NotificationService } from './notificationService.js';
 import { ReminderService } from './reminderService.js';
 import { PushNotificationAdapter } from './pushAdapter.js';
 import { NotificationEventType, NotificationPriority, NotificationChannel } from './types.js';
+import { requireAuth } from '../../core/authMiddleware.js';
 
 export const notificationsRouter = Router();
 
-// Middleware helper to extract tenantId and user
+// Every notifications endpoint needs a signed-in user.
+notificationsRouter.use(requireAuth);
+
+// Company and user from the signed-in session only. Previously this read `req.tenant`
+// (never set), then the x-tenant-id header, then a shared 'tenant-default'.
 function getTenantAndUser(req: Request) {
-  const tenantId =
-    (req as any).tenant?.tenantId ||
-    (req.headers['x-tenant-id'] as string) ||
-    'tenant-default';
-  const userId =
-    (req as any).user?.userId ||
-    (req as any).user?.email ||
-    'default-user';
-  return { tenantId, userId };
+  return { tenantId: req.tenantContext!.tenantId, userId: req.tenantContext!.userId };
 }
 
 // ==========================================
