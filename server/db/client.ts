@@ -21,7 +21,7 @@ export function buildConnectionOptions(rawUrl: string): { connectionString: stri
   try {
     const url = new URL(rawUrl);
     host = url.hostname;
-    for (const key of ['sslmode', 'sslrootcert', 'sslcert', 'sslkey', 'uselibpqcompat', 'sslnegotiation']) {
+    for (const key of ['sslmode', 'sslrootcert', 'sslcert', 'sslkey', 'uselibpqcompat', 'sslnegotiation', 'supa', 'pgbouncer']) {
       url.searchParams.delete(key);
     }
     connectionString = url.toString();

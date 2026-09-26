@@ -12,7 +12,8 @@ describe('buildConnectionOptions (hosted Postgres SSL)', () => {
   it('removes sslmode from the URL so pg does not force verify-full over our ssl option', () => {
     const o = buildConnectionOptions(SUPABASE);
     expect(o.connectionString).not.toMatch(/sslmode/);
-    expect(o.connectionString).toContain('supa=base-pooler.x');
+    expect(o.connectionString).not.toMatch(/supa=|pgbouncer=/);
+    expect(o.connectionString).toContain('pooler.supabase.com:5432/postgres');
     expect(o.ssl).toEqual({ rejectUnauthorized: false });
   });
 
