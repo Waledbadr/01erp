@@ -342,21 +342,45 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
     return calculateInvoiceTotals(linesCalc);
   }, [invoiceLines, items]);
 
+  /**
+   * Price of an invoice line for (item, customer, unit). The customer's active price agreement
+   * wins (when uomId is given, only an agreement for that unit); otherwise the unit's own
+   * price, or the base price x conversion factor. Used for new lines, item/unit changes and
+   * customer changes, so an agreement is applied however the line was filled.
+   */
+  const resolveInvoiceLinePrice = (itemId: string, customerId: string, uomId?: string) => {
+    const it = items.find((i) => i.id === itemId);
+    if (!it) return null;
+    const agreement = findMatchingPriceAgreement(priceAgreements, customerId, itemId, uomId);
+    if (agreement) {
+      return {
+        uomId: agreement.uomId,
+        unitPriceSar: agreement.agreedPriceSar,
+        discountPercent: agreement.fixedDiscountPercent || 0,
+        taxRate: it.taxRate || 15,
+      };
+    }
+    const unit = (uomId ? it.units.find((u) => u.id === uomId) : undefined) || it.units[0];
+    const u = (unit || {}) as { salePrice?: number; wholesalePrice?: number; conversionFactor?: number };
+    const factor = u.conversionFactor || 1;
+    const b2b = newInvoiceType === 'STANDARD_B2B';
+    const unitPrice = b2b
+      ? u.wholesalePrice || u.salePrice || (it.wholesalePrice || it.sellingPrice) * factor
+      : u.salePrice || it.sellingPrice * factor;
+    return {
+      uomId: unit?.id || 'unit-base',
+      unitPriceSar: Math.round(unitPrice * 100) / 100,
+      discountPercent: 0,
+      taxRate: it.taxRate || 15,
+    };
+  };
+
   // Add line to invoice
   const handleAddInvoiceLine = () => {
     if (items.length === 0) return;
     const it = items[0];
-    setInvoiceLines((prev) => [
-      ...prev,
-      {
-        itemId: it.id,
-        uomId: it.units[0]?.id || 'unit-base',
-        quantity: 1,
-        unitPriceSar: newInvoiceType === 'STANDARD_B2B' ? (it.wholesalePrice || it.sellingPrice) : it.sellingPrice,
-        discountPercent: 0,
-        taxRate: it.taxRate || 15,
-      },
-    ]);
+    const priced = resolveInvoiceLinePrice(it.id, selectedCustomerId);
+    setInvoiceLines((prev) => [...prev, { itemId: it.id, quantity: 1, ...priced! }]);
   };
 
   // Remove line from invoice
@@ -371,21 +395,14 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
       const copy = [...prev];
       const target = { ...copy[idx], [field]: val };
 
-      // If item changed, refresh prices & units according to Customer Price Agreements
-      if (field === 'itemId') {
-        const found = items.find((i) => i.id === val);
-        if (found) {
-          const agreement = findMatchingPriceAgreement(priceAgreements, selectedCustomerId, val);
-          if (agreement) {
-            target.uomId = agreement.uomId;
-            target.unitPriceSar = agreement.agreedPriceSar;
-            target.discountPercent = agreement.fixedDiscountPercent || 0;
-          } else {
-            target.uomId = found.units[0]?.id || 'unit-base';
-            target.unitPriceSar = newInvoiceType === 'STANDARD_B2B' ? (found.wholesalePrice || found.sellingPrice) : found.sellingPrice;
-          }
-          target.taxRate = found.taxRate || 15;
-        }
+      // Item or unit changed: re-price from the customer's agreement (or the unit price).
+      if (field === 'itemId' || field === 'uomId') {
+        const priced = resolveInvoiceLinePrice(
+          field === 'itemId' ? val : target.itemId,
+          selectedCustomerId,
+          field === 'uomId' ? val : undefined,
+        );
+        if (priced) Object.assign(target, priced);
       }
       copy[idx] = target;
       return copy;
@@ -458,22 +475,14 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
     );
   };
 
-  // Sync invoice customer change to re-evaluate prices
+  // Sync invoice customer change to re-evaluate prices (agreement of the new customer, or
+  // back to the regular price when the new customer has none).
   const handleInvoiceCustomerChange = (newCustId: string) => {
     setSelectedCustomerId(newCustId);
     setInvoiceLines((prev) =>
       prev.map((l) => {
-        const it = items.find((i) => i.id === l.itemId);
-        const agreement = findMatchingPriceAgreement(priceAgreements, newCustId, l.itemId);
-        if (agreement) {
-          return {
-            ...l,
-            uomId: agreement.uomId,
-            unitPriceSar: agreement.agreedPriceSar,
-            discountPercent: agreement.fixedDiscountPercent || 0,
-          };
-        }
-        return l;
+        const priced = resolveInvoiceLinePrice(l.itemId, newCustId);
+        return priced ? { ...l, ...priced } : l;
       })
     );
   };
