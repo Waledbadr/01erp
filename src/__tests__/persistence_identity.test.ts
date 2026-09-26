@@ -20,7 +20,7 @@ interface ApiProcess {
   proc: ChildProcess;
 }
 
-let nextPort = 4200 + Math.floor(Math.random() * 500);
+let nextPort = 40000 + Math.floor(Math.random() * 20000);
 let dbUrl = '';
 
 async function startApi(): Promise<ApiProcess> {

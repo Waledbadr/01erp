@@ -3,6 +3,7 @@ import { I18nProvider, useI18n } from './i18n/context.js';
 import { ToastProvider } from './components/ui/Toast.js';
 import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { AppLayout } from './components/layout/AppLayout.js';
+import { ThemeToggle } from './components/ui/ThemeToggle.js';
 import { HomeDashboardView } from './components/views/HomeDashboardView.js';
 import { DesignSystemView } from './components/views/DesignSystemView.js';
 import { DocsView } from './components/views/DocsView.js';
@@ -141,6 +142,7 @@ function AppContent() {
             </div>
 
             <div className="flex items-center gap-2">
+              <ThemeToggle isAr={isAr} />
               <button
                 onClick={toggleLanguage}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 shadow-2xs transition"

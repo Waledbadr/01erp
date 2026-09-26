@@ -164,7 +164,8 @@ describe('PHASE 21 & 22: SECURITY HARDENING, AES-256-GCM ENCRYPTION & DRILL VERI
       // Tamper with ciphertext
       const tamperedCiphertext = {
         ...encrypted,
-        ciphertextHex: encrypted.ciphertextHex.slice(0, -2) + 'ff',
+        // Always change the last byte (a fixed 'ff' was a no-op when the byte already was ff).
+        ciphertextHex: encrypted.ciphertextHex.slice(0, -2) + (encrypted.ciphertextHex.slice(-2) === 'ff' ? '00' : 'ff'),
       };
       expect(() => decryptAesGcm(tamperedCiphertext)).toThrow();
 
