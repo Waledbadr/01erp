@@ -190,10 +190,23 @@ const MIGRATION_LOCK_KEY = 482_917_001; // arbitrary, stable advisory-lock id
 
 /** Applies all pending migrations. Returns the versions applied in this call. */
 export async function applyMigrations(pool: pg.Pool): Promise<string[]> {
+  // Fast path: nothing to do (no lock, no transaction).
+  try {
+    const { rows } = await pool.query<{ version: string }>('SELECT version FROM _erp_migration_version');
+    const done = new Set(rows.map((r) => r.version));
+    if (MIGRATIONS.every((m) => done.has(m.version))) return [];
+  } catch {
+    // table does not exist yet
+  }
+
+  // Everything happens in ONE transaction with a transaction-scoped advisory lock, so it also
+  // works behind a transaction-mode pooler (Supabase port 6543 / PgBouncer), where a
+  // session-level lock and its unlock could run on different server connections.
   const client = await pool.connect();
   const applied: string[] = [];
   try {
-    await client.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK_KEY]);
+    await client.query('BEGIN');
+    await client.query('SELECT pg_advisory_xact_lock($1)', [MIGRATION_LOCK_KEY]);
     await client.query(`
       CREATE TABLE IF NOT EXISTS _erp_migration_version (
         version VARCHAR(64) PRIMARY KEY,
@@ -202,26 +215,22 @@ export async function applyMigrations(pool: pg.Pool): Promise<string[]> {
     `);
     const { rows } = await client.query<{ version: string }>('SELECT version FROM _erp_migration_version');
     const done = new Set(rows.map((r) => r.version));
-
     for (const m of MIGRATIONS) {
       if (done.has(m.version)) continue;
-      await client.query('BEGIN');
       try {
         await client.query(m.sql);
         await client.query('INSERT INTO _erp_migration_version (version) VALUES ($1)', [m.version]);
-        await client.query('COMMIT');
         applied.push(m.version);
       } catch (err) {
-        await client.query('ROLLBACK');
         throw new Error(`Migration ${m.version} failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
+    await client.query('COMMIT');
     return applied;
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => undefined);
+    throw err;
   } finally {
-    try {
-      await client.query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK_KEY]);
-    } finally {
-      client.release();
-    }
+    client.release();
   }
 }

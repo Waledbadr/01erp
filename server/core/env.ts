@@ -25,9 +25,12 @@ export function validateEnv(): AppEnv {
 
   const dbUrl =
     process.env.DATABASE_URL ||
-    process.env.POSTGRES_URL_NON_POOLING ||
+    // Prefer the transaction pooler (Supabase/Vercel POSTGRES_URL, port 6543): serverless runs
+    // many instances at once and the session pooler (NON_POOLING) allows only ~15 connections,
+    // which made parallel requests fail with 503.
     process.env.POSTGRES_URL ||
-    process.env.POSTGRES_PRISMA_URL;
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL_NON_POOLING;
 
   const jwtSecret =
     process.env.JWT_SECRET ||
