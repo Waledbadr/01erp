@@ -7,12 +7,11 @@ Cloud accounting, inventory, sales, purchasing and e-invoicing for Saudi busines
 
 | Area | State |
 |---|---|
-| Users, companies, branches, memberships, sessions | Stored in PostgreSQL when `DATABASE_URL` is set (tested across restarts) |
-| Accounting, inventory, sales, purchasing, treasury, VAT, ZATCA, reports… | Working screens, **data still kept in server memory** — lost on restart |
+| Users, companies, branches, memberships, sessions | PostgreSQL tables (`docs/development/tasks/TASK-006.md`) |
+| All company data: accounts, journals, items, stock, customers, suppliers, sales, purchasing, treasury, VAT, ZATCA, POS, assets… | PostgreSQL, one versioned snapshot per company (`docs/development/tasks/TASK-008.md`) |
 | ZATCA | Invoice XML / hash / QR generated locally; no onboarding with ZATCA's portal yet |
 
-Do not use it for real bookkeeping until the remaining modules are persisted. Details:
-`docs/development/tasks/TASK-006.md`.
+Suitable for a pilot with real data. Known accounting issues and limits are listed in TASK-008.
 
 ## Run locally
 

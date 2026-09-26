@@ -34,6 +34,7 @@ import {
 } from '../../../src/lib/zatca.js';
 import { buildZatcaQRForInvoice } from '../../../src/lib/sales.js';
 import { logger } from '../../core/logger.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
 
 export interface ZatcaCertificateConfig {
   tenantId: string;
@@ -112,10 +113,13 @@ export interface ZatcaTransmissionJob {
 
 // In-memory tenant stores for ZATCA configuration, e-invoices and transmission queue
 const tenantZatcaConfigs = new Map<string, ZatcaCertificateConfig>();
+registerTenantState('zatca.zatcaService.tenantZatcaConfigs', tenantZatcaConfigs);
 const tenantZatcaQueues = new Map<string, ZatcaTransmissionJob[]>();
+registerTenantState('zatca.zatcaService.tenantZatcaQueues', tenantZatcaQueues);
 const tenantEInvoices = new Map<string, EInvoiceDocument[]>();
 
 // Helper to scrub secrets from any client responses or log output
+registerTenantState('zatca.zatcaService.tenantEInvoices', tenantEInvoices);
 export function scrubZatcaConfig(config: ZatcaCertificateConfig): ScrubbedZatcaConfig {
   let daysUntilExpiry: number | undefined;
   let isExpiringSoon = false;

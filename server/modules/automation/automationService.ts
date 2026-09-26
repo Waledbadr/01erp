@@ -16,18 +16,24 @@ import {
 import { evaluateConditionTree, getNestedValue } from './conditionEvaluator.js';
 import { NotificationService } from '../notifications/notificationService.js';
 import { logger } from '../../core/logger.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
 
 // In-Memory tenant-isolated store for Automation Rules
 const rulesStore: Map<string, AutomationRule[]> = new Map();
 // In-Memory tenant-isolated store for Execution Logs
+registerTenantState('automation.automationService.rulesStore', rulesStore);
 const executionLogsStore: Map<string, ExecutionHistoryLog[]> = new Map();
 // In-Memory store for registered tasks created by automation rules
+registerTenantState('automation.automationService.executionLogsStore', executionLogsStore);
 const automationTasksStore: Map<string, any[]> = new Map();
 // In-Memory store for draft documents created by automation rules
+registerTenantState('automation.automationService.automationTasksStore', automationTasksStore);
 const automationDraftsStore: Map<string, any[]> = new Map();
 // In-Memory store for outgoing webhook delivery logs
+registerTenantState('automation.automationService.automationDraftsStore', automationDraftsStore);
 const webhookLogsStore: Map<string, any[]> = new Map();
 
+registerTenantState('automation.automationService.webhookLogsStore', webhookLogsStore);
 /**
  * Replace string template placeholders like {customer_name}, {amount_sar}, {invoice_number}
  */

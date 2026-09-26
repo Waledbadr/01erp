@@ -17,6 +17,7 @@ import {
 } from './types.js';
 import { generateZatcaQR } from '../../../src/lib/zatca.js';
 import { logger } from '../../core/logger.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
 
 function generateZatcaTLVQR(input: {
   sellerName: string;
@@ -35,11 +36,16 @@ function generateZatcaTLVQR(input: {
 
 // In-Memory tenant-isolated stores
 const registersStore: Map<string, PosRegister[]> = new Map();
+registerTenantState('pos.posService.registersStore', registersStore);
 const shiftsStore: Map<string, PosShift[]> = new Map();
+registerTenantState('pos.posService.shiftsStore', shiftsStore);
 const cashMovementsStore: Map<string, CashMovement[]> = new Map();
+registerTenantState('pos.posService.cashMovementsStore', cashMovementsStore);
 const ordersStore: Map<string, PosOrder[]> = new Map();
+registerTenantState('pos.posService.ordersStore', ordersStore);
 const heldCartsStore: Map<string, HeldCart[]> = new Map();
 
+registerTenantState('pos.posService.heldCartsStore', heldCartsStore);
 export class PosService {
   /**
    * Seed default registers for tenant

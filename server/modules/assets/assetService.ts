@@ -20,12 +20,17 @@ import {
   calculateDisposalGainOrLoss,
 } from '../../../src/lib/fixedAssets.js';
 import { roundSar, toHalalas, fromHalalasToDisplay } from '../../../src/lib/accounting.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
+import { env } from '../../core/env.js';
 
 // In-memory tenant stores
 const tenantAssetCategoriesMap = new Map<string, AssetCategory[]>();
+registerTenantState('assets.assetService.tenantAssetCategoriesMap', tenantAssetCategoriesMap);
 const tenantFixedAssetsMap = new Map<string, FixedAsset[]>();
+registerTenantState('assets.assetService.tenantFixedAssetsMap', tenantFixedAssetsMap);
 const tenantDepreciationRunsMap = new Map<string, DepreciationRunHistory[]>();
 
+registerTenantState('assets.assetService.tenantDepreciationRunsMap', tenantDepreciationRunsMap);
 export function setFixedAssetsForTenant(tenantId: string, assets: FixedAsset[]) {
   tenantFixedAssetsMap.set(tenantId, assets);
 }
@@ -44,8 +49,10 @@ export function seedDefaultAssetData(tenantId: string, adminUserId: string) {
     tenantAssetCategoriesMap.set(tenantId, categories);
   }
 
-  // 2. Sample Assets
-  if (!tenantFixedAssetsMap.has(tenantId)) {
+  // 2. Sample Assets (demo deployments only; a real company starts with no assets)
+  if (!env.SEED_DEMO_DATA) {
+    if (!tenantFixedAssetsMap.has(tenantId)) tenantFixedAssetsMap.set(tenantId, []);
+  } else if (!tenantFixedAssetsMap.has(tenantId)) {
     const categories = tenantAssetCategoriesMap.get(tenantId)!;
     const catVehicle = categories.find((c) => c.code === 'CAT-VEHICLES') || categories[0];
     const catIT = categories.find((c) => c.code === 'CAT-IT') || categories[1];

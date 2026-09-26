@@ -7,6 +7,7 @@ import {
   PaperSize,
   LanguageMode,
 } from './types.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
 
 // Default standard column configuration for invoices & orders
 function getDefaultColumns(docType: DocumentType) {
@@ -95,8 +96,11 @@ export function buildSystemDefaultTemplate(
 
 // In-Memory storage repositories
 const templatesStore: Map<string, DocumentTemplate[]> = new Map();
+registerTenantState('documents.documentTemplateService.templatesStore', templatesStore);
 const snapshotsStore: Map<string, DocumentSnapshot> = new Map(); // key: `${tenantId}:${documentType}:${documentId}`
+registerTenantState('documents.documentTemplateService.snapshotsStore', snapshotsStore);
 const preferencesStore: Map<string, PrintPreferences> = new Map(); // key: `${tenantId}:${userId}:${documentType}`
+registerTenantState('documents.documentTemplateService.preferencesStore', preferencesStore);
 
 export class DocumentTemplateService {
   /**

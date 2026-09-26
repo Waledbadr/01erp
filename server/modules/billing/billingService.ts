@@ -27,20 +27,29 @@ import { toHalalas, fromHalalasToDisplay } from '../../../src/lib/accounting.js'
 import { NotificationService } from '../notifications/notificationService.js';
 import { AutomationService } from '../automation/automationService.js';
 import { logger } from '../../core/logger.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
 
 // In-Memory tenant-isolated store for Subscriptions and Invoices
 const subscriptionsStore = new Map<string, TenantSubscription>();
+registerTenantState('billing.billingService.subscriptionsStore', subscriptionsStore);
 const invoicesStore = new Map<string, SubscriptionInvoice[]>();
+registerTenantState('billing.billingService.invoicesStore', invoicesStore);
 const usageMetricsStore = new Map<string, Map<string, TenantUsageMetrics>>();
+registerTenantState('billing.billingService.usageMetricsStore', usageMetricsStore);
 const processedWebhooks = new Set<string>();
 const adminAccessGrantsStore: AdminAccessGrant[] = [];
+registerTenantState('billing.billingService.adminAccessGrantsStore', adminAccessGrantsStore);
 const adminAccessLogsStore: AdminAccessLog[] = [];
 
 // Track usage counters incremented at runtime (e.g. AI requests, uploaded bytes, simulated documents)
+registerTenantState('billing.billingService.adminAccessLogsStore', adminAccessLogsStore);
 const tenantAiRequestCounters = new Map<string, number>();
+registerTenantState('billing.billingService.tenantAiRequestCounters', tenantAiRequestCounters);
 const tenantStorageByteCounters = new Map<string, number>();
+registerTenantState('billing.billingService.tenantStorageByteCounters', tenantStorageByteCounters);
 const tenantDocumentCounters = new Map<string, number>();
 
+registerTenantState('billing.billingService.tenantDocumentCounters', tenantDocumentCounters);
 export class UsageLimitExceededError extends Error {
   public statusCode = 403;
   public code = 'USAGE_LIMIT_EXCEEDED';

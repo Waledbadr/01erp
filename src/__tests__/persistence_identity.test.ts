@@ -10,6 +10,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn, type ChildProcess } from 'node:child_process';
 import path from 'node:path';
 import pg from 'pg';
+import { prepareTestDatabase } from './helpers/apiProcess.js';
 
 const DB_URL = process.env.TEST_DATABASE_URL;
 const ROOT = path.resolve(__dirname, '../..');
@@ -20,12 +21,13 @@ interface ApiProcess {
 }
 
 let nextPort = 4200 + Math.floor(Math.random() * 500);
+let dbUrl = '';
 
 async function startApi(): Promise<ApiProcess> {
   const port = nextPort++;
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    DATABASE_URL: DB_URL,
+    DATABASE_URL: dbUrl,
     POSTGRES_URL: '',
     POSTGRES_URL_NON_POOLING: '',
     POSTGRES_PRISMA_URL: '',
@@ -107,8 +109,8 @@ describe.skipIf(!DB_URL)('Identity persistence on PostgreSQL (restart & multi-in
   let tenantCode = '';
 
   beforeAll(async () => {
-    pool = new pg.Pool({ connectionString: DB_URL });
-    await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
+    dbUrl = await prepareTestDatabase(DB_URL!, 'identity');
+    pool = new pg.Pool({ connectionString: dbUrl });
     // Recreate Supabase's public API roles and their default grants, so the lock-down
     // migration is tested against the same exposure it has to close.
     for (const role of ['anon', 'authenticated']) {

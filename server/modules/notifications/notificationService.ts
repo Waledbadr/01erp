@@ -15,12 +15,16 @@ import {
 } from './types.js';
 import { PushNotificationAdapter } from './pushAdapter.js';
 import { logger } from '../../core/logger.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
+import { env } from '../../core/env.js';
 
 // In-Memory store keyed by tenantId
 const notificationsStore: Map<string, NotificationItem[]> = new Map();
 // Preferences store keyed by `${tenantId}:${userId}`
+registerTenantState('notifications.notificationService.notificationsStore', notificationsStore);
 const preferencesStore: Map<string, UserNotificationPreferences> = new Map();
 
+registerTenantState('notifications.notificationService.preferencesStore', preferencesStore);
 export interface TriggerEventOptions {
   tenantId: string;
   userId?: string;
@@ -458,6 +462,7 @@ export class NotificationService {
    * Pre-seed initial enterprise notifications if empty
    */
   private static ensureSeedData(tenantId: string) {
+    if (!env.SEED_DEMO_DATA) return; // sample notifications are demo data only
     if (notificationsStore.has(tenantId) && (notificationsStore.get(tenantId)?.length || 0) > 0) {
       return;
     }

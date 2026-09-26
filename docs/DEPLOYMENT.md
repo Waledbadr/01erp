@@ -80,8 +80,10 @@ and `PLATFORM_ADMIN_PASSWORD` (>= 12 characters) are set, creates or updates the
 With a database the demo company and demo users (published password) are NOT seeded unless
 `SEED_DEMO_DATA=true`. `ERP_PERSISTENCE=off` forces in-memory mode.
 
-All other domain data is still in memory only and is lost on restart. Serverless hosting (Vercel) is
-therefore still unsuitable for real use until the remaining units are persisted.
+All other company data is saved as one versioned snapshot per company in `tenant_state` (TASK-008),
+locked per company so every Vercel instance sees the same data. A failed request (HTTP >= 400) saves
+nothing. Use the database provider's backups (Supabase: daily backups / PITR); in-app backups are not
+persisted.
 
 Before deploying: run `TEST_DATABASE_URL=<disposable db> npm run test:persistence`. The test DROPS the
 `public` schema of that database; never point it at real data.

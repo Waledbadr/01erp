@@ -48,11 +48,14 @@ import {
   executeVatSalesReport,
   executeVatGlReconciliation,
 } from './salesInventoryVatReports.js';
+import { registerTenantState } from '../../db/tenantStateRegistry.js';
 
 // In-memory tenant stores for presets and async jobs
 const tenantPresets = new Map<string, ReportFilterPreset[]>();
+registerTenantState('reports.reportService.tenantPresets', tenantPresets);
 const tenantJobs = new Map<string, ReportAsyncJob[]>();
 
+registerTenantState('reports.reportService.tenantJobs', tenantJobs);
 export class ReportService {
   /**
    * Execute any report synchronously
