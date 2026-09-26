@@ -35,6 +35,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { useI18n } from '../../i18n/context.js';
+import { ThemeToggle } from '../ui/ThemeToggle.js';
 import { Badge } from '../ui/Badge.js';
 import { useToast } from '../ui/Toast.js';
 import { NotificationAPI, NotificationItem } from '../../lib/notifications.js';
@@ -491,6 +492,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               <span className="hidden sm:inline">{isAr ? 'المساعد الذكي' : 'AI Copilot'}</span>
               <kbd className="hidden md:inline px-1.5 py-0.5 text-[10px] rounded bg-white/60 dark:bg-black/20 font-mono">⌘K</kbd>
             </button>
+
+            <ThemeToggle isAr={isAr} />
 
             {/* Language Switcher */}
             <button

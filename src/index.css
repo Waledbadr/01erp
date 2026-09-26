@@ -1,1 +1,12 @@
 @import "tailwindcss";
+/* dark: utilities follow the in-app toggle (html.dark), not only the system setting */
+@custom-variant dark (&:where(.dark, .dark *));
+@import "./theme-dark.css";
+/* Borders without an explicit colour default to currentColor (bright text in dark mode). */
+@layer base {
+  html.dark *,
+  html.dark ::before,
+  html.dark ::after {
+    border-color: #273449;
+  }
+}
