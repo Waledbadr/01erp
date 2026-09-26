@@ -23,7 +23,7 @@ import type { Request, Response, NextFunction } from 'express';
 import type pg from 'pg';
 import { env } from '../core/env.js';
 import { logger } from '../core/logger.js';
-import { getDbPool } from './client.js';
+import { getDbPool, isTooManyConnectionsError } from './client.js';
 import { applyMigrations } from './migrations.js';
 import { acquireTenantLock, commitTenantLock, rollbackTenantLock, saveNewTenants, type TenantLock } from './tenantStatePersistence.js';
 import {
@@ -610,9 +610,12 @@ export async function identityPersistenceMiddleware(req: Request, res: Response,
   } catch (err) {
     if (tenantLock) await rollbackTenantLock(tenantLock);
     logger.error('Identity persistence: load failed', { error: err instanceof Error ? err.message : String(err), path });
+    const reason = err instanceof Error ? err.message : String(err);
     return res.status(503).json({
       error: 'DATABASE_UNAVAILABLE',
       message: 'تعذر الوصول إلى قاعدة البيانات. يرجى المحاولة لاحقاً.',
+      // Short, non-secret cause to make production problems diagnosable without log access.
+      reason: isTooManyConnectionsError(err) ? 'TOO_MANY_CONNECTIONS' : reason.replace(/postgres(ql)?:\/\/\S+/gi, '[url]').slice(0, 120),
     });
   }
 
