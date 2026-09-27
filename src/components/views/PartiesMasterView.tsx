@@ -5,6 +5,7 @@ import { Button } from '../ui/Button.js';
 import { Input } from '../ui/Input.js';
 import { Badge } from '../ui/Badge.js';
 import { Modal } from '../ui/Modal.js';
+import { FormSection, Field, ToggleCard, InfoBanner, fieldClass } from '../ui/FormSection.js';
 import { useToast } from '../ui/Toast.js';
 import {
   Users,
@@ -328,9 +329,20 @@ export const PartiesMasterView: React.FC<{ onNavigate?: (route: string) => void 
     if (customerForm.unifiedNumber && !validateSaudiUnifiedNumber(customerForm.unifiedNumber).valid) {
       errors.unifiedNumber = isAr ? 'الرقم الموحد يجب أن يبدأ بـ 7 ويتكون من 10 أرقام' : 'Unified number must start with 7 and have 10 digits';
     }
+    // Same rule the server enforces (validatePartyLegalData): companies/establishments need CR or VAT.
+    if ((customerForm.type === 'COMPANY' || customerForm.type === 'ESTABLISHMENT') && !customerForm.crNumber.trim() && !customerForm.vatNumber.trim()) {
+      const msg = isAr ? 'الشركات والمؤسسات تتطلب إدخال رقم السجل التجاري أو الرقم الضريبي' : 'Companies and establishments require a CR or VAT number';
+      errors.vatNumber = errors.vatNumber || msg;
+      errors.crNumber = errors.crNumber || msg;
+    }
 
+    setCustomerFormErrors(errors);
     if (Object.keys(errors).length > 0) {
-      setCustomerFormErrors(errors);
+      showToast({
+        title: isAr ? 'يرجى تصحيح الحقول المحددة' : 'Please fix the highlighted fields',
+        description: Object.values(errors)[0],
+        variant: 'error',
+      });
       return;
     }
 
@@ -372,7 +384,7 @@ export const PartiesMasterView: React.FC<{ onNavigate?: (route: string) => void 
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || errorData.message || 'Failed to create customer');
+        throw new Error(errorData.message || errorData.error || 'Failed to create customer');
       }
 
       showToast({
@@ -411,12 +423,20 @@ export const PartiesMasterView: React.FC<{ onNavigate?: (route: string) => void 
     if (supplierForm.crNumber && !validateSaudiCrNumber(supplierForm.crNumber).valid) {
       errors.crNumber = isAr ? 'السجل التجاري يجب أن يتكون من 10 أرقام' : 'CR must be 10 digits';
     }
+    if (supplierForm.unifiedNumber && !validateSaudiUnifiedNumber(supplierForm.unifiedNumber).valid) {
+      errors.unifiedNumber = isAr ? 'الرقم الموحد يجب أن يبدأ بـ 7 ويتكون من 10 أرقام' : 'Unified number must start with 7 and have 10 digits';
+    }
     if (supplierForm.bankIban && !validateSaudiIban(supplierForm.bankIban).valid) {
       errors.bankIban = isAr ? 'الآيبان السعودي يجب أن يبدأ بـ SA ويتكون من 24 حرفاً ورقماً' : 'Saudi IBAN must start with SA (24 characters)';
     }
 
+    setSupplierFormErrors(errors);
     if (Object.keys(errors).length > 0) {
-      setSupplierFormErrors(errors);
+      showToast({
+        title: isAr ? 'يرجى تصحيح الحقول المحددة' : 'Please fix the highlighted fields',
+        description: Object.values(errors)[0],
+        variant: 'error',
+      });
       return;
     }
 
@@ -458,7 +478,7 @@ export const PartiesMasterView: React.FC<{ onNavigate?: (route: string) => void 
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || errorData.message || 'Failed to create supplier');
+        throw new Error(errorData.message || errorData.error || 'Failed to create supplier');
       }
 
       showToast({
@@ -1396,210 +1416,337 @@ SUPP-2002,مؤسسة البحر الأحمر للخدمات اللوجستية,R
         isOpen={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
         title={isAr ? 'إضافة عميل جديد وإنشاء الحساب الفرعي' : 'New Customer & Auto Subaccount'}
-        size="lg"
+        subtitle={
+          isAr
+            ? 'بيانات العميل الأساسية والضريبية وشروط الائتمان — يُنشأ حسابه الفرعي تحت 10201 تلقائياً'
+            : 'Master, tax and credit data — a GL subaccount is created under 10201 automatically'
+        }
+        icon={<Users className="w-5 h-5" />}
+        iconTone="emerald"
+        size="4xl"
+        footer={
+          <>
+            <Button variant="outline" type="button" onClick={() => setIsCustomerModalOpen(false)}>
+              {isAr ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button variant="primary" type="submit" form="create-customer-form" startIcon={<CheckCircle2 className="w-4 h-4" />}>
+              {isAr ? 'حفظ العميل وإنشاء الحساب' : 'Save Customer & Subaccount'}
+            </Button>
+          </>
+        }
       >
-        <form onSubmit={handleCreateCustomer} className="space-y-4">
-          <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-lg text-xs text-emerald-900 flex items-center justify-between">
-            <span>
-              {isAr
-                ? 'سيتم توليد الحساب الفرعي بدفتر الأستاذ العام تلقائياً تحت الحساب الرئيسي 10201 (المدينون التجاريون).'
-                : 'GL subaccount will be created automatically under 10201 (Accounts Receivable).'}
-            </span>
-            <ShieldCheck className="w-4 h-4 text-emerald-700" />
-          </div>
+        <form id="create-customer-form" onSubmit={handleCreateCustomer} noValidate className="space-y-4">
+          <InfoBanner tone="emerald" icon={<ShieldCheck className="w-4 h-4" />}>
+            {isAr
+              ? 'سيتم توليد الحساب الفرعي بدفتر الأستاذ العام تلقائياً تحت الحساب الرئيسي 10201 (المدينون التجاريون)، وربطه بكشف حساب العميل وأعمار الديون.'
+              : 'A GL subaccount is created automatically under 10201 (Accounts Receivable) and linked to the customer statement and aging.'}
+          </InfoBanner>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'كود العميل (اختياري)' : 'Customer Code'}</label>
+          <FormSection
+            tone="emerald"
+            icon={<Building className="w-4 h-4" />}
+            title={isAr ? 'البيانات الأساسية' : 'Basic Information'}
+            description={isAr ? 'الاسم القانوني كما يظهر على الفاتورة الضريبية' : 'Legal name as printed on tax invoices'}            columns={3}
+          >
+            <Field label={isAr ? 'الاسم القانوني بالعربية' : 'Legal Name (Arabic)'} required error={customerFormErrors.nameAr} span="full">
               <input
                 type="text"
-                placeholder="Auto (e.g. CUST-0004)"
-                value={customerForm.code}
-                onChange={(e) => setCustomerForm({ ...customerForm, code: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg font-mono focus:outline-hidden focus:border-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'نوع المنشأة' : 'Legal Type'}</label>
-              <select
-                value={customerForm.type}
-                onChange={(e) => setCustomerForm({ ...customerForm, type: e.target.value as any })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-emerald-500"
-              >
-                <option value="ESTABLISHMENT">{isAr ? 'مؤسسة فردية (ESTABLISHMENT)' : 'Establishment'}</option>
-                <option value="COMPANY">{isAr ? 'شركة تجارية (COMPANY)' : 'Company'}</option>
-                <option value="INDIVIDUAL">{isAr ? 'فرد (INDIVIDUAL)' : 'Individual'}</option>
-                <option value="GOVERNMENT">{isAr ? 'جهة حكومية (GOVERNMENT)' : 'Government'}</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                {isAr ? 'الاسم القانوني بالعربية *' : 'Legal Name (Arabic) *'}
-              </label>
-              <input
-                type="text"
-                required
                 placeholder="مثال: شركة التوريدات السعودية المحدودة"
                 value={customerForm.nameAr}
                 onChange={(e) => setCustomerForm({ ...customerForm, nameAr: e.target.value })}
-                className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-hidden ${
-                  customerFormErrors.nameAr ? 'border-red-500' : 'border-slate-200 focus:border-emerald-500'
-                }`}
+                className={fieldClass({ error: !!customerFormErrors.nameAr })}
               />
-              {customerFormErrors.nameAr && <p className="text-xs text-red-600 mt-1">{customerFormErrors.nameAr}</p>}
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'الاسم بالإنجليزية' : 'Legal Name (English)'}</label>
+            </Field>
+            <Field label={isAr ? 'الاسم بالإنجليزية' : 'Legal Name (English)'} span="full">
               <input
                 type="text"
+                dir="ltr"
                 placeholder="e.g. Saudi Supply Co. Ltd."
                 value={customerForm.nameEn}
                 onChange={(e) => setCustomerForm({ ...customerForm, nameEn: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-emerald-500"
+                className={fieldClass()}
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'رقم الجوال *' : 'Mobile Number *'}</label>
+            </Field>
+            <Field label={isAr ? 'كود العميل' : 'Customer Code'} hint={isAr ? 'اتركه فارغاً للترقيم التلقائي' : 'Leave empty to auto-number'}>
               <input
                 type="text"
-                required
-                placeholder="05XXXXXXXX"
-                value={customerForm.mobile}
-                onChange={(e) => setCustomerForm({ ...customerForm, mobile: e.target.value })}
-                className={`w-full px-3 py-2 text-sm font-mono border rounded-lg focus:outline-hidden ${
-                  customerFormErrors.mobile ? 'border-red-500' : 'border-slate-200 focus:border-emerald-500'
-                }`}
+                dir="ltr"
+                placeholder="CUST-0004"
+                value={customerForm.code}
+                onChange={(e) => setCustomerForm({ ...customerForm, code: e.target.value })}
+                className={fieldClass({ mono: true })}
               />
-              {customerFormErrors.mobile && <p className="text-xs text-red-600 mt-1">{customerFormErrors.mobile}</p>}
-            </div>
+            </Field>
+            <Field label={isAr ? 'نوع المنشأة' : 'Legal Type'}>
+              <select
+                value={customerForm.type}
+                onChange={(e) => setCustomerForm({ ...customerForm, type: e.target.value as PartyType })}
+                className={fieldClass()}
+              >
+                <option value="ESTABLISHMENT">{isAr ? 'مؤسسة فردية' : 'Establishment'}</option>
+                <option value="COMPANY">{isAr ? 'شركة تجارية' : 'Company'}</option>
+                <option value="INDIVIDUAL">{isAr ? 'فرد' : 'Individual'}</option>
+                <option value="GOVERNMENT">{isAr ? 'جهة حكومية' : 'Government'}</option>
+                <option value="FOREIGN">{isAr ? 'جهة أجنبية' : 'Foreign Entity'}</option>
+              </select>
+            </Field>
+            <Field label={isAr ? 'مجموعة العميل' : 'Customer Group'}>
+              <select
+                value={customerForm.customerGroup}
+                onChange={(e) => setCustomerForm({ ...customerForm, customerGroup: e.target.value as CustomerGroup })}
+                className={fieldClass()}
+              >
+                <option value="RETAIL">{isAr ? 'تجزئة' : 'Retail'}</option>
+                <option value="WHOLESALE">{isAr ? 'جملة' : 'Wholesale'}</option>
+                <option value="VIP">{isAr ? 'كبار العملاء (VIP)' : 'VIP'}</option>
+                <option value="KEY_ACCOUNT">{isAr ? 'حساب رئيسي' : 'Key Account'}</option>
+                <option value="GOVERNMENT">{isAr ? 'حكومي' : 'Government'}</option>
+              </select>
+            </Field>
+          </FormSection>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
-              <input
-                type="email"
-                placeholder="billing@company.sa"
-                value={customerForm.email}
-                onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'الرقم الضريبي (15 خانة)' : 'VAT Number (15 digits)'}</label>
+          <FormSection
+            tone="indigo"
+            icon={<FileCheck className="w-4 h-4" />}
+            title={isAr ? 'البيانات الضريبية والنظامية' : 'Tax & Registration'}
+            description={
+              isAr
+                ? 'الرقم الضريبي إلزامي لإصدار فاتورة ضريبية (B2B) متوافقة مع فاتورة – المرحلة الثانية'
+                : 'VAT number is required to issue a ZATCA Phase 2 standard (B2B) tax invoice'
+            }
+            columns={3}
+          >
+            <Field
+              label={isAr ? 'الرقم الضريبي' : 'VAT Number'}
+              hint={isAr ? '15 رقماً يبدأ وينتهي بـ 3' : '15 digits, starts & ends with 3'}
+              error={customerFormErrors.vatNumber}
+            >
               <input
                 type="text"
+                dir="ltr"
+                inputMode="numeric"
                 maxLength={15}
                 placeholder="3XXXXXXXXXXXXX3"
                 value={customerForm.vatNumber}
-                onChange={(e) => setCustomerForm({ ...customerForm, vatNumber: e.target.value })}
-                className={`w-full px-3 py-2 text-sm font-mono border rounded-lg focus:outline-hidden ${
-                  customerFormErrors.vatNumber ? 'border-red-500' : 'border-slate-200 focus:border-emerald-500'
-                }`}
+                onChange={(e) => setCustomerForm({ ...customerForm, vatNumber: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ mono: true, error: !!customerFormErrors.vatNumber })}
               />
-              {customerFormErrors.vatNumber && <p className="text-xs text-red-600 mt-1">{customerFormErrors.vatNumber}</p>}
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'السجل التجاري (10 أرقام)' : 'CR Number (10 digits)'}</label>
+            </Field>
+            <Field
+              label={isAr ? 'السجل التجاري' : 'CR Number'}
+              hint={isAr ? '10 أرقام' : '10 digits'}
+              error={customerFormErrors.crNumber}
+            >
               <input
                 type="text"
+                dir="ltr"
+                inputMode="numeric"
                 maxLength={10}
                 placeholder="1010XXXXXX"
                 value={customerForm.crNumber}
-                onChange={(e) => setCustomerForm({ ...customerForm, crNumber: e.target.value })}
-                className={`w-full px-3 py-2 text-sm font-mono border rounded-lg focus:outline-hidden ${
-                  customerFormErrors.crNumber ? 'border-red-500' : 'border-slate-200 focus:border-emerald-500'
-                }`}
+                onChange={(e) => setCustomerForm({ ...customerForm, crNumber: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ mono: true, error: !!customerFormErrors.crNumber })}
               />
-              {customerFormErrors.crNumber && <p className="text-xs text-red-600 mt-1">{customerFormErrors.crNumber}</p>}
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'الرقم الموحد (700)' : 'Unified 700 Number'}</label>
+            </Field>
+            <Field
+              label={isAr ? 'الرقم الموحد (700)' : 'Unified Number (700)'}
+              hint={isAr ? '10 أرقام يبدأ بـ 7' : '10 digits, starts with 7'}
+              error={customerFormErrors.unifiedNumber}
+            >
               <input
                 type="text"
+                dir="ltr"
+                inputMode="numeric"
                 maxLength={10}
                 placeholder="700XXXXXXX"
                 value={customerForm.unifiedNumber}
-                onChange={(e) => setCustomerForm({ ...customerForm, unifiedNumber: e.target.value })}
-                className={`w-full px-3 py-2 text-sm font-mono border rounded-lg focus:outline-hidden ${
-                  customerFormErrors.unifiedNumber ? 'border-red-500' : 'border-slate-200 focus:border-emerald-500'
-                }`}
+                onChange={(e) => setCustomerForm({ ...customerForm, unifiedNumber: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ mono: true, error: !!customerFormErrors.unifiedNumber })}
               />
-              {customerFormErrors.unifiedNumber && <p className="text-xs text-red-600 mt-1">{customerFormErrors.unifiedNumber}</p>}
-            </div>
+            </Field>
+            {customerForm.type === 'INDIVIDUAL' && (
+              <Field label={isAr ? 'رقم الهوية / الإقامة' : 'National ID / Iqama'}>
+                <input
+                  type="text"
+                  dir="ltr"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="1XXXXXXXXX"
+                  value={customerForm.nationalId}
+                  onChange={(e) => setCustomerForm({ ...customerForm, nationalId: e.target.value.replace(/\D/g, '') })}
+                  className={fieldClass({ mono: true })}
+                />
+              </Field>
+            )}
+          </FormSection>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'شروط السداد الائتماني' : 'Payment Terms'}</label>
+          <FormSection
+            tone="blue"
+            icon={<Phone className="w-4 h-4" />}
+            title={isAr ? 'بيانات التواصل' : 'Contact Details'}
+            columns={2}
+          >
+            <Field label={isAr ? 'رقم الجوال' : 'Mobile Number'} required hint="05XXXXXXXX" error={customerFormErrors.mobile}>
+              <input
+                type="tel"
+                dir="ltr"
+                maxLength={10}
+                placeholder="05XXXXXXXX"
+                value={customerForm.mobile}
+                onChange={(e) => setCustomerForm({ ...customerForm, mobile: e.target.value.replace(/[^\d]/g, '') })}
+                className={fieldClass({ mono: true, error: !!customerFormErrors.mobile })}
+              />
+            </Field>
+            <Field label={isAr ? 'الهاتف الثابت' : 'Landline'}>
+              <input
+                type="tel"
+                dir="ltr"
+                placeholder="011XXXXXXX"
+                value={customerForm.phone}
+                onChange={(e) => setCustomerForm({ ...customerForm, phone: e.target.value })}
+                className={fieldClass({ mono: true })}
+              />
+            </Field>
+            <Field label={isAr ? 'البريد الإلكتروني' : 'Email'} hint={isAr ? 'تُرسل عليه الفواتير وكشوف الحساب' : 'Invoices and statements are sent here'}>
+              <input
+                type="email"
+                dir="ltr"
+                placeholder="billing@company.sa"
+                value={customerForm.email}
+                onChange={(e) => setCustomerForm({ ...customerForm, email: e.target.value })}
+                className={fieldClass()}
+              />
+            </Field>
+            <Field label={isAr ? 'الشخص المسؤول' : 'Contact Person'}>
+              <input
+                type="text"
+                value={customerForm.contactPersonName}
+                onChange={(e) => setCustomerForm({ ...customerForm, contactPersonName: e.target.value })}
+                className={fieldClass()}
+              />
+            </Field>
+          </FormSection>
+
+          <FormSection
+            tone="amber"
+            icon={<MapPin className="w-4 h-4" />}
+            title={isAr ? 'العنوان الوطني' : 'National Address'}
+            description={isAr ? 'يظهر على الفاتورة الضريبية للمشتري' : 'Printed as the buyer address on tax invoices'}
+            columns={3}
+          >
+            <Field label={isAr ? 'المدينة' : 'City'}>
+              <input
+                type="text"
+                value={customerForm.city}
+                onChange={(e) => setCustomerForm({ ...customerForm, city: e.target.value })}
+                className={fieldClass()}
+              />
+            </Field>
+            <Field label={isAr ? 'الحي' : 'District'}>
+              <input
+                type="text"
+                value={customerForm.district}
+                onChange={(e) => setCustomerForm({ ...customerForm, district: e.target.value })}
+                className={fieldClass()}
+              />
+            </Field>
+            <Field label={isAr ? 'الشارع' : 'Street'}>
+              <input
+                type="text"
+                value={customerForm.street}
+                onChange={(e) => setCustomerForm({ ...customerForm, street: e.target.value })}
+                className={fieldClass()}
+              />
+            </Field>
+            <Field label={isAr ? 'رقم المبنى' : 'Building No.'}>
+              <input
+                type="text"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="1234"
+                value={customerForm.buildingNumber}
+                onChange={(e) => setCustomerForm({ ...customerForm, buildingNumber: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ mono: true })}
+              />
+            </Field>
+            <Field label={isAr ? 'الرمز البريدي' : 'Postal Code'}>
+              <input
+                type="text"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={5}
+                placeholder="12345"
+                value={customerForm.postalCode}
+                onChange={(e) => setCustomerForm({ ...customerForm, postalCode: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ mono: true })}
+              />
+            </Field>
+            <Field label={isAr ? 'الرقم الإضافي' : 'Additional No.'}>
+              <input
+                type="text"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="5678"
+                value={customerForm.additionalNumber}
+                onChange={(e) => setCustomerForm({ ...customerForm, additionalNumber: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ mono: true })}
+              />
+            </Field>
+          </FormSection>
+
+          <FormSection
+            tone="violet"
+            icon={<CreditCard className="w-4 h-4" />}
+            title={isAr ? 'الائتمان وشروط السداد' : 'Credit & Payment Terms'}
+            description={isAr ? 'يتم فحص سقف الائتمان قبل ترحيل أي فاتورة آجلة' : 'Credit limit is checked before posting any credit invoice'}
+          >
+            <Field label={isAr ? 'شروط السداد' : 'Payment Terms'}>
               <select
                 value={customerForm.paymentTerms}
-                onChange={(e) => setCustomerForm({ ...customerForm, paymentTerms: e.target.value as any })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-emerald-500"
+                onChange={(e) => setCustomerForm({ ...customerForm, paymentTerms: e.target.value as PaymentTerms })}
+                className={fieldClass()}
               >
                 <option value="IMMEDIATE">{isAr ? 'سداد فوري (نقدي)' : 'Immediate / Cash'}</option>
                 <option value="NET_15">{isAr ? 'آجل 15 يوماً' : 'Net 15 Days'}</option>
                 <option value="NET_30">{isAr ? 'آجل 30 يوماً' : 'Net 30 Days'}</option>
                 <option value="NET_60">{isAr ? 'آجل 60 يوماً' : 'Net 60 Days'}</option>
                 <option value="NET_90">{isAr ? 'آجل 90 يوماً' : 'Net 90 Days'}</option>
+                <option value="EOM_30">{isAr ? 'نهاية الشهر + 30 يوماً' : 'End of Month + 30'}</option>
               </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'سقف الائتمان (SAR)' : 'Credit Limit (SAR)'}</label>
-              <input
-                type="number"
-                step="1000"
-                value={customerForm.creditLimit}
-                onChange={(e) => setCustomerForm({ ...customerForm, creditLimit: e.target.value })}
-                className="w-full px-3 py-2 text-sm font-mono border border-slate-200 rounded-lg focus:outline-hidden focus:border-emerald-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'المدينة (العنوان الوطني)' : 'City'}</label>
-              <input
-                type="text"
-                value={customerForm.city}
-                onChange={(e) => setCustomerForm({ ...customerForm, city: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-emerald-500"
-              />
-            </div>
-
-            <div className="md:col-span-2 flex items-center gap-6 pt-1">
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
+            </Field>
+            <Field label={isAr ? 'سقف الائتمان' : 'Credit Limit'} hint={isAr ? 'بالريال السعودي — 0 يعني بدون سقف' : 'In SAR — 0 means no limit'}>
+              <div className="relative" dir="ltr">
                 <input
-                  type="checkbox"
-                  checked={customerForm.cashOnly}
-                  onChange={(e) => setCustomerForm({ ...customerForm, cashOnly: e.target.checked })}
-                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                  type="number"
+                  dir="ltr"
+                  min={0}
+                  step="1000"
+                  value={customerForm.creditLimit}
+                  onChange={(e) => setCustomerForm({ ...customerForm, creditLimit: e.target.value })}
+                  className={fieldClass({ mono: true, className: 'pe-14' })}
                 />
-                <span>{isAr ? 'تقييد بالمبيعات النقدية فقط (ممنوع الآجل)' : 'Cash Only (Block Credit Sales)'}</span>
-              </label>
-
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={customerForm.creditHold}
-                  onChange={(e) => setCustomerForm({ ...customerForm, creditHold: e.target.checked })}
-                  className="rounded border-slate-300 text-red-600 focus:ring-red-500"
-                />
-                <span>{isAr ? 'حظر ائتماني فوري (Credit Hold)' : 'Activate Credit Hold'}</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <Button variant="outline" type="button" onClick={() => setIsCustomerModalOpen(false)}>
-              {isAr ? 'إلغاء' : 'Cancel'}
-            </Button>
-            <Button variant="primary" type="submit">
-              {isAr ? 'حفظ العميل وإنشاء الحساب' : 'Save Customer & Subaccount'}
-            </Button>
-          </div>
+                <span className="pointer-events-none absolute inset-y-0 end-0 flex items-center pe-3 text-xs font-semibold text-slate-400">
+                  SAR
+                </span>
+              </div>
+            </Field>
+            <ToggleCard
+              tone="amber"
+              checked={customerForm.cashOnly}
+              onChange={(v) => setCustomerForm({ ...customerForm, cashOnly: v })}
+              title={isAr ? 'مبيعات نقدية فقط' : 'Cash Only'}
+              description={isAr ? 'يمنع إصدار فواتير آجلة لهذا العميل' : 'Blocks credit invoices for this customer'}
+            />
+            <ToggleCard
+              tone="rose"
+              checked={customerForm.creditHold}
+              onChange={(v) => setCustomerForm({ ...customerForm, creditHold: v })}
+              title={isAr ? 'حظر ائتماني (Credit Hold)' : 'Credit Hold'}
+              description={isAr ? 'إيقاف البيع الآجل فوراً حتى رفع الحظر' : 'Stops credit sales until the hold is lifted'}
+            />
+          </FormSection>
         </form>
       </Modal>
 
@@ -1610,190 +1757,329 @@ SUPP-2002,مؤسسة البحر الأحمر للخدمات اللوجستية,R
         isOpen={isSupplierModalOpen}
         onClose={() => setIsSupplierModalOpen(false)}
         title={isAr ? 'إضافة مورد جديد وإنشاء الحساب الفرعي' : 'New Supplier & Auto Subaccount'}
-        size="lg"
+        subtitle={
+          isAr
+            ? 'بيانات المورد الأساسية والضريبية والبنكية — يُنشأ حسابه الفرعي تحت 20101 تلقائياً'
+            : 'Master, tax and banking data — a GL subaccount is created under 20101 automatically'
+        }
+        icon={<Building2 className="w-5 h-5" />}
+        iconTone="blue"
+        size="4xl"
+        footer={
+          <>
+            <Button variant="outline" type="button" onClick={() => setIsSupplierModalOpen(false)}>
+              {isAr ? 'إلغاء' : 'Cancel'}
+            </Button>
+            <Button variant="primary" type="submit" form="create-supplier-form" startIcon={<CheckCircle2 className="w-4 h-4" />}>
+              {isAr ? 'حفظ المورد وإنشاء الحساب' : 'Save Supplier & Subaccount'}
+            </Button>
+          </>
+        }
       >
-        <form onSubmit={handleCreateSupplier} className="space-y-4">
-          <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-lg text-xs text-blue-900 flex items-center justify-between">
-            <span>
-              {isAr
-                ? 'سيتم توليد الحساب الفرعي بدفتر الأستاذ العام تلقائياً تحت الحساب الرئيسي 20101 (الدائنون التجاريون).'
-                : 'GL subaccount will be created automatically under 20101 (Accounts Payable).'}
-            </span>
-            <Building2 className="w-4 h-4 text-blue-700" />
-          </div>
+        <form id="create-supplier-form" onSubmit={handleCreateSupplier} noValidate className="space-y-4">
+          <InfoBanner tone="blue" icon={<Building2 className="w-4 h-4" />}>
+            {isAr
+              ? 'سيتم توليد الحساب الفرعي بدفتر الأستاذ العام تلقائياً تحت الحساب الرئيسي 20101 (الدائنون التجاريون)، وربطه بفواتير المشتريات وسندات الصرف.'
+              : 'A GL subaccount is created automatically under 20101 (Accounts Payable) and linked to purchase bills and payment vouchers.'}
+          </InfoBanner>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'كود المورد (اختياري)' : 'Supplier Code'}</label>
+          <FormSection
+            tone="blue"
+            icon={<Building className="w-4 h-4" />}
+            title={isAr ? 'البيانات الأساسية' : 'Basic Information'}
+            description={isAr ? 'الاسم القانوني كما يظهر على فاتورة المورد الضريبية' : 'Legal name as printed on the supplier tax invoice'}            columns={4}
+          >
+            <Field label={isAr ? 'الاسم القانوني بالعربية' : 'Legal Name (Arabic)'} required error={supplierFormErrors.nameAr} span={2}>
               <input
                 type="text"
-                placeholder="Auto (e.g. SUPP-0004)"
-                value={supplierForm.code}
-                onChange={(e) => setSupplierForm({ ...supplierForm, code: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg font-mono focus:outline-hidden focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'تصنيف المورد' : 'Supplier Classification'}</label>
-              <select
-                value={supplierForm.supplierClassification}
-                onChange={(e) => setSupplierForm({ ...supplierForm, supplierClassification: e.target.value as any })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-blue-500"
-              >
-                <option value="LOCAL">{isAr ? 'مورد محلي (LOCAL)' : 'Local'}</option>
-                <option value="INTERNATIONAL">{isAr ? 'مورد دولي / استيراد (INTERNATIONAL)' : 'International'}</option>
-                <option value="NON_VAT">{isAr ? 'مورد غير مسجل بالضريبة (NON_VAT)' : 'Non-VAT'}</option>
-              </select>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                {isAr ? 'الاسم القانوني بالعربية *' : 'Legal Name (Arabic) *'}
-              </label>
-              <input
-                type="text"
-                required
                 placeholder="مثال: شركة الصناعات البتروكيماوية المتحدة"
                 value={supplierForm.nameAr}
                 onChange={(e) => setSupplierForm({ ...supplierForm, nameAr: e.target.value })}
-                className={`w-full px-3 py-2 text-sm border rounded-lg focus:outline-hidden ${
-                  supplierFormErrors.nameAr ? 'border-red-500' : 'border-slate-200 focus:border-blue-500'
-                }`}
+                className={fieldClass({ tone: 'blue', error: !!supplierFormErrors.nameAr })}
               />
-              {supplierFormErrors.nameAr && <p className="text-xs text-red-600 mt-1">{supplierFormErrors.nameAr}</p>}
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'الاسم بالإنجليزية' : 'Legal Name (English)'}</label>
+            </Field>
+            <Field label={isAr ? 'الاسم بالإنجليزية' : 'Legal Name (English)'} span={2}>
               <input
                 type="text"
+                dir="ltr"
                 placeholder="e.g. United Petrochemical Industries Co."
                 value={supplierForm.nameEn}
                 onChange={(e) => setSupplierForm({ ...supplierForm, nameEn: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-blue-500"
+                className={fieldClass({ tone: 'blue' })}
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'رقم الجوال *' : 'Mobile Number *'}</label>
+            </Field>
+            <Field label={isAr ? 'كود المورد' : 'Supplier Code'} hint={isAr ? 'اتركه فارغاً للترقيم التلقائي' : 'Leave empty to auto-number'}>
               <input
                 type="text"
-                required
-                placeholder="05XXXXXXXX"
-                value={supplierForm.mobile}
-                onChange={(e) => setSupplierForm({ ...supplierForm, mobile: e.target.value })}
-                className={`w-full px-3 py-2 text-sm font-mono border rounded-lg focus:outline-hidden ${
-                  supplierFormErrors.mobile ? 'border-red-500' : 'border-slate-200 focus:border-blue-500'
-                }`}
+                dir="ltr"
+                placeholder="SUPP-0004"
+                value={supplierForm.code}
+                onChange={(e) => setSupplierForm({ ...supplierForm, code: e.target.value })}
+                className={fieldClass({ tone: 'blue', mono: true })}
               />
-              {supplierFormErrors.mobile && <p className="text-xs text-red-600 mt-1">{supplierFormErrors.mobile}</p>}
-            </div>
+            </Field>
+            <Field label={isAr ? 'نوع المنشأة' : 'Legal Type'}>
+              <select
+                value={supplierForm.type}
+                onChange={(e) => setSupplierForm({ ...supplierForm, type: e.target.value as PartyType })}
+                className={fieldClass({ tone: 'blue' })}
+              >
+                <option value="COMPANY">{isAr ? 'شركة تجارية' : 'Company'}</option>
+                <option value="ESTABLISHMENT">{isAr ? 'مؤسسة فردية' : 'Establishment'}</option>
+                <option value="INDIVIDUAL">{isAr ? 'فرد' : 'Individual'}</option>
+                <option value="GOVERNMENT">{isAr ? 'جهة حكومية' : 'Government'}</option>
+                <option value="FOREIGN">{isAr ? 'جهة أجنبية' : 'Foreign Entity'}</option>
+              </select>
+            </Field>
+            <Field label={isAr ? 'تصنيف المورد' : 'Classification'}>
+              <select
+                value={supplierForm.supplierClassification}
+                onChange={(e) => setSupplierForm({ ...supplierForm, supplierClassification: e.target.value as SupplierClassification })}
+                className={fieldClass({ tone: 'blue' })}
+              >
+                <option value="LOCAL">{isAr ? 'مورد محلي' : 'Local'}</option>
+                <option value="INTERNATIONAL">{isAr ? 'مورد دولي / استيراد' : 'International / Import'}</option>
+                <option value="NON_VAT">{isAr ? 'غير مسجل بالضريبة' : 'Not VAT Registered'}</option>
+              </select>
+            </Field>
+            <Field label={isAr ? 'مجموعة المورد' : 'Supplier Group'}>
+              <select
+                value={supplierForm.supplierGroup}
+                onChange={(e) => setSupplierForm({ ...supplierForm, supplierGroup: e.target.value as SupplierGroup })}
+                className={fieldClass({ tone: 'blue' })}
+              >
+                <option value="RAW_MATERIALS">{isAr ? 'مواد أولية' : 'Raw Materials'}</option>
+                <option value="COMMODITIES">{isAr ? 'بضائع جاهزة' : 'Commodities'}</option>
+                <option value="SERVICES">{isAr ? 'خدمات' : 'Services'}</option>
+                <option value="IMPORTERS">{isAr ? 'مستوردون' : 'Importers'}</option>
+                <option value="LOGISTICS">{isAr ? 'لوجستيات وشحن' : 'Logistics'}</option>
+              </select>
+            </Field>
+          </FormSection>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'البريد الإلكتروني' : 'Email'}</label>
-              <input
-                type="email"
-                placeholder="orders@vendor.sa"
-                value={supplierForm.email}
-                onChange={(e) => setSupplierForm({ ...supplierForm, email: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-blue-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'الرقم الضريبي (15 خانة)' : 'VAT Number (15 digits)'}</label>
+          <FormSection
+            tone="indigo"
+            icon={<FileCheck className="w-4 h-4" />}
+            title={isAr ? 'البيانات الضريبية والنظامية' : 'Tax & Registration'}
+            description={
+              isAr
+                ? 'الرقم الضريبي للمورد شرط لخصم ضريبة المدخلات في إقرار ضريبة القيمة المضافة'
+                : "The supplier's VAT number is required to reclaim input VAT"
+            }
+            columns={3}
+          >
+            <Field
+              label={isAr ? 'الرقم الضريبي' : 'VAT Number'}
+              hint={isAr ? '15 رقماً يبدأ وينتهي بـ 3' : '15 digits, starts & ends with 3'}
+              error={supplierFormErrors.vatNumber}
+            >
               <input
                 type="text"
+                dir="ltr"
+                inputMode="numeric"
                 maxLength={15}
                 placeholder="3XXXXXXXXXXXXX3"
                 value={supplierForm.vatNumber}
-                onChange={(e) => setSupplierForm({ ...supplierForm, vatNumber: e.target.value })}
-                className={`w-full px-3 py-2 text-sm font-mono border rounded-lg focus:outline-hidden ${
-                  supplierFormErrors.vatNumber ? 'border-red-500' : 'border-slate-200 focus:border-blue-500'
-                }`}
+                onChange={(e) => setSupplierForm({ ...supplierForm, vatNumber: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ tone: 'blue', mono: true, error: !!supplierFormErrors.vatNumber })}
               />
-              {supplierFormErrors.vatNumber && <p className="text-xs text-red-600 mt-1">{supplierFormErrors.vatNumber}</p>}
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'السجل التجاري (10 أرقام)' : 'CR Number (10 digits)'}</label>
+            </Field>
+            <Field label={isAr ? 'السجل التجاري' : 'CR Number'} hint={isAr ? '10 أرقام' : '10 digits'} error={supplierFormErrors.crNumber}>
               <input
                 type="text"
+                dir="ltr"
+                inputMode="numeric"
                 maxLength={10}
                 placeholder="1010XXXXXX"
                 value={supplierForm.crNumber}
-                onChange={(e) => setSupplierForm({ ...supplierForm, crNumber: e.target.value })}
-                className={`w-full px-3 py-2 text-sm font-mono border rounded-lg focus:outline-hidden ${
-                  supplierFormErrors.crNumber ? 'border-red-500' : 'border-slate-200 focus:border-blue-500'
-                }`}
+                onChange={(e) => setSupplierForm({ ...supplierForm, crNumber: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ tone: 'blue', mono: true, error: !!supplierFormErrors.crNumber })}
               />
-              {supplierFormErrors.crNumber && <p className="text-xs text-red-600 mt-1">{supplierFormErrors.crNumber}</p>}
-            </div>
+            </Field>
+            <Field
+              label={isAr ? 'الرقم الموحد (700)' : 'Unified Number (700)'}
+              hint={isAr ? '10 أرقام يبدأ بـ 7' : '10 digits, starts with 7'}
+              error={supplierFormErrors.unifiedNumber}
+            >
+              <input
+                type="text"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="700XXXXXXX"
+                value={supplierForm.unifiedNumber}
+                onChange={(e) => setSupplierForm({ ...supplierForm, unifiedNumber: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ tone: 'blue', mono: true, error: !!supplierFormErrors.unifiedNumber })}
+              />
+            </Field>
+          </FormSection>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'اسم البنك' : 'Bank Name'}</label>
+          <FormSection tone="blue" icon={<Phone className="w-4 h-4" />} title={isAr ? 'بيانات التواصل' : 'Contact Details'}>
+            <Field label={isAr ? 'رقم الجوال' : 'Mobile Number'} required hint="05XXXXXXXX" error={supplierFormErrors.mobile}>
+              <input
+                type="tel"
+                dir="ltr"
+                maxLength={10}
+                placeholder="05XXXXXXXX"
+                value={supplierForm.mobile}
+                onChange={(e) => setSupplierForm({ ...supplierForm, mobile: e.target.value.replace(/[^\d]/g, '') })}
+                className={fieldClass({ tone: 'blue', mono: true, error: !!supplierFormErrors.mobile })}
+              />
+            </Field>
+            <Field label={isAr ? 'الهاتف الثابت' : 'Landline'}>
+              <input
+                type="tel"
+                dir="ltr"
+                placeholder="011XXXXXXX"
+                value={supplierForm.phone}
+                onChange={(e) => setSupplierForm({ ...supplierForm, phone: e.target.value })}
+                className={fieldClass({ tone: 'blue', mono: true })}
+              />
+            </Field>
+            <Field label={isAr ? 'البريد الإلكتروني' : 'Email'} hint={isAr ? 'تُرسل عليه أوامر الشراء' : 'Purchase orders are sent here'}>
+              <input
+                type="email"
+                dir="ltr"
+                placeholder="orders@vendor.sa"
+                value={supplierForm.email}
+                onChange={(e) => setSupplierForm({ ...supplierForm, email: e.target.value })}
+                className={fieldClass({ tone: 'blue' })}
+              />
+            </Field>
+            <Field label={isAr ? 'الشخص المسؤول' : 'Contact Person'}>
+              <input
+                type="text"
+                value={supplierForm.contactPersonName}
+                onChange={(e) => setSupplierForm({ ...supplierForm, contactPersonName: e.target.value })}
+                className={fieldClass({ tone: 'blue' })}
+              />
+            </Field>
+          </FormSection>
+
+          <FormSection
+            tone="amber"
+            icon={<MapPin className="w-4 h-4" />}
+            title={isAr ? 'العنوان الوطني' : 'National Address'}
+            columns={3}
+          >
+            <Field label={isAr ? 'المدينة' : 'City'}>
+              <input
+                type="text"
+                value={supplierForm.city}
+                onChange={(e) => setSupplierForm({ ...supplierForm, city: e.target.value })}
+                className={fieldClass({ tone: 'blue' })}
+              />
+            </Field>
+            <Field label={isAr ? 'الحي' : 'District'}>
+              <input
+                type="text"
+                value={supplierForm.district}
+                onChange={(e) => setSupplierForm({ ...supplierForm, district: e.target.value })}
+                className={fieldClass({ tone: 'blue' })}
+              />
+            </Field>
+            <Field label={isAr ? 'الشارع' : 'Street'}>
+              <input
+                type="text"
+                value={supplierForm.street}
+                onChange={(e) => setSupplierForm({ ...supplierForm, street: e.target.value })}
+                className={fieldClass({ tone: 'blue' })}
+              />
+            </Field>
+            <Field label={isAr ? 'رقم المبنى' : 'Building No.'}>
+              <input
+                type="text"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="1234"
+                value={supplierForm.buildingNumber}
+                onChange={(e) => setSupplierForm({ ...supplierForm, buildingNumber: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ tone: 'blue', mono: true })}
+              />
+            </Field>
+            <Field label={isAr ? 'الرمز البريدي' : 'Postal Code'}>
+              <input
+                type="text"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={5}
+                placeholder="12345"
+                value={supplierForm.postalCode}
+                onChange={(e) => setSupplierForm({ ...supplierForm, postalCode: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ tone: 'blue', mono: true })}
+              />
+            </Field>
+            <Field label={isAr ? 'الرقم الإضافي' : 'Additional No.'}>
+              <input
+                type="text"
+                dir="ltr"
+                inputMode="numeric"
+                maxLength={4}
+                placeholder="5678"
+                value={supplierForm.additionalNumber}
+                onChange={(e) => setSupplierForm({ ...supplierForm, additionalNumber: e.target.value.replace(/\D/g, '') })}
+                className={fieldClass({ tone: 'blue', mono: true })}
+              />
+            </Field>
+          </FormSection>
+
+          <FormSection
+            tone="emerald"
+            icon={<DollarSign className="w-4 h-4" />}
+            title={isAr ? 'البيانات البنكية وشروط السداد' : 'Banking & Payment Terms'}
+            description={isAr ? 'تُستخدم في سندات الصرف والتحويلات البنكية للمورد' : 'Used on payment vouchers and bank transfers'}
+          >
+            <Field label={isAr ? 'اسم البنك' : 'Bank Name'}>
               <input
                 type="text"
                 placeholder="مصرف الراجحي / البنك الأهلي..."
                 value={supplierForm.bankName}
                 onChange={(e) => setSupplierForm({ ...supplierForm, bankName: e.target.value })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-blue-500"
+                className={fieldClass({ tone: 'blue' })}
               />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'الآيبان البنكي (SA + 22 رقم)' : 'Saudi IBAN (SA + 22 digits)'}</label>
-              <input
-                type="text"
-                maxLength={24}
-                placeholder="SA0000000000000000000000"
-                value={supplierForm.bankIban}
-                onChange={(e) => setSupplierForm({ ...supplierForm, bankIban: e.target.value.toUpperCase() })}
-                className={`w-full px-3 py-2 text-sm font-mono border rounded-lg focus:outline-hidden ${
-                  supplierFormErrors.bankIban ? 'border-red-500' : 'border-slate-200 focus:border-blue-500'
-                }`}
-              />
-              {supplierFormErrors.bankIban && <p className="text-xs text-red-600 mt-1">{supplierFormErrors.bankIban}</p>}
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'شروط السداد المعتمدة' : 'Payment Terms'}</label>
+            </Field>
+            <Field label={isAr ? 'شروط السداد' : 'Payment Terms'}>
               <select
                 value={supplierForm.paymentTerms}
-                onChange={(e) => setSupplierForm({ ...supplierForm, paymentTerms: e.target.value as any })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-blue-500"
+                onChange={(e) => setSupplierForm({ ...supplierForm, paymentTerms: e.target.value as PaymentTerms })}
+                className={fieldClass({ tone: 'blue' })}
               >
+                <option value="IMMEDIATE">{isAr ? 'سداد فوري عند الاستلام' : 'Immediate upon delivery'}</option>
+                <option value="NET_15">{isAr ? 'آجل 15 يوماً' : 'Net 15 Days'}</option>
                 <option value="NET_30">{isAr ? 'آجل 30 يوماً' : 'Net 30 Days'}</option>
                 <option value="NET_60">{isAr ? 'آجل 60 يوماً' : 'Net 60 Days'}</option>
                 <option value="NET_90">{isAr ? 'آجل 90 يوماً' : 'Net 90 Days'}</option>
-                <option value="IMMEDIATE">{isAr ? 'سداد فوري عند الاستلام' : 'Immediate upon delivery'}</option>
+                <option value="EOM_30">{isAr ? 'نهاية الشهر + 30 يوماً' : 'End of Month + 30'}</option>
               </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">{isAr ? 'مجموعة المورد' : 'Supplier Group'}</label>
-              <select
-                value={supplierForm.supplierGroup}
-                onChange={(e) => setSupplierForm({ ...supplierForm, supplierGroup: e.target.value as any })}
-                className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-hidden focus:border-blue-500"
-              >
-                <option value="RAW_MATERIALS">{isAr ? 'مواد أولية' : 'Raw Materials'}</option>
-                <option value="COMMODITIES">{isAr ? 'بضائع جاهزة' : 'Commodities'}</option>
-                <option value="SERVICES">{isAr ? 'خدمات' : 'Services'}</option>
-                <option value="LOGISTICS">{isAr ? 'لوجستيات وشحن' : 'Logistics'}</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <Button variant="outline" type="button" onClick={() => setIsSupplierModalOpen(false)}>
-              {isAr ? 'إلغاء' : 'Cancel'}
-            </Button>
-            <Button variant="primary" type="submit">
-              {isAr ? 'حفظ المورد وإنشاء الحساب' : 'Save Supplier & Subaccount'}
-            </Button>
-          </div>
+            </Field>
+            <Field
+              label={isAr ? 'رقم الآيبان' : 'IBAN'}
+              hint={isAr ? 'SA متبوعاً بـ 22 رقماً' : 'SA followed by 22 digits'}
+              error={supplierFormErrors.bankIban}
+            >
+              <input
+                type="text"
+                dir="ltr"
+                maxLength={24}
+                placeholder="SA0000000000000000000000"
+                value={supplierForm.bankIban}
+                onChange={(e) => setSupplierForm({ ...supplierForm, bankIban: e.target.value.toUpperCase().replace(/\s/g, '') })}
+                className={fieldClass({ tone: 'blue', mono: true, error: !!supplierFormErrors.bankIban })}
+              />
+            </Field>
+            <Field label={isAr ? 'رمز السويفت' : 'SWIFT / BIC'} hint={isAr ? 'للموردين الدوليين' : 'For international suppliers'}>
+              <input
+                type="text"
+                dir="ltr"
+                maxLength={11}
+                placeholder="RJHISARI"
+                value={supplierForm.swiftCode}
+                onChange={(e) => setSupplierForm({ ...supplierForm, swiftCode: e.target.value.toUpperCase() })}
+                className={fieldClass({ tone: 'blue', mono: true })}
+              />
+            </Field>
+          </FormSection>
         </form>
       </Modal>
 

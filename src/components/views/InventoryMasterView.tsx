@@ -5,6 +5,7 @@ import { Button } from '../ui/Button.js';
 import { Input } from '../ui/Input.js';
 import { Badge } from '../ui/Badge.js';
 import { Modal } from '../ui/Modal.js';
+import { FormSection, Field, fieldClass } from '../ui/FormSection.js';
 import { useToast } from '../ui/Toast.js';
 import {
   Boxes,
@@ -33,6 +34,7 @@ import {
   ClipboardCheck,
   Ship,
   FileText,
+  Trash2,
 } from 'lucide-react';
 import { StockMovementsTab } from './inventory/StockMovementsTab.js';
 import { StockTransfersTab } from './inventory/StockTransfersTab.js';
@@ -1192,183 +1194,253 @@ export const InventoryMasterView: React.FC<{ onNavigate: (route: string) => void
         isOpen={showNewItemModal}
         onClose={() => setShowNewItemModal(false)}
         title={isAr ? 'إضافة صنف جديد بتعريف الوحدات المتعددة (Multi-UOM)' : 'Create Product Master with Multi-UOM'}
-        maxWidth="lg"
-      >
-        <form onSubmit={handleCreateItemSubmit} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">
-                {isAr ? 'رمز الصنف (SKU) *' : 'SKU *'}
-              </label>
-              <Input
-                value={newSku}
-                onChange={(e) => setNewSku(e.target.value)}
-                placeholder="e.g. ITM-NEW-001"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">
-                {isAr ? 'الباركود الأساسي (اختياري، يولد تلقائياً)' : 'Primary Barcode'}
-              </label>
-              <Input
-                value={newPrimaryBarcode}
-                onChange={(e) => setNewPrimaryBarcode(e.target.value)}
-                placeholder="e.g. 628999123456"
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">
-                {isAr ? 'اسم الصنف بالعربي *' : 'Item Name (Arabic) *'}
-              </label>
-              <Input
-                value={newNameAr}
-                onChange={(e) => setNewNameAr(e.target.value)}
-                placeholder="e.g. زيت زيتون بكر ممتاز 500 مل"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">
-                {isAr ? 'اسم الصنف بالإنجليزي' : 'Item Name (English)'}
-              </label>
-              <Input
-                value={newNameEn}
-                onChange={(e) => setNewNameEn(e.target.value)}
-                placeholder="e.g. Extra Virgin Olive Oil 500ml"
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">
-                {isAr ? 'الوحدة الأساسية (Base Unit) *' : 'Base Unit *'}
-              </label>
-              <Input
-                value={newBaseUnit}
-                onChange={(e) => setNewBaseUnit(e.target.value)}
-                placeholder="حبة / علبة / كجم"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">
-                {isAr ? 'سعر البيع الافتراضي (﷼) *' : 'Default Sale Price (SAR) *'}
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                value={newSellingPrice}
-                onChange={(e) => setNewSellingPrice(e.target.value)}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="font-bold text-slate-700 block mb-1">
-                {isAr ? 'تكلفة الشراء التقديرية (﷼)' : 'Estimated Cost (SAR)'}
-              </label>
-              <Input
-                type="number"
-                step="0.01"
-                value={newCost}
-                onChange={(e) => setNewCost(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Multi-UOM Section */}
-          <div className="pt-3 border-t border-slate-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-bold text-slate-800 flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-emerald-700" />
-                {isAr ? 'وحدات التعبئة والتجزئة الإضافية (Packaging Units)' : 'Packaging Units (Multi-UOM)'}
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  setNewUnits([
-                    ...newUnits,
-                    { nameAr: `كرتون (${newUnits.length + 2} عبوات)`, factor: (newUnits.length + 2) * 6, barcode: '', price: 0 },
-                  ])
-                }
-                className="text-xs text-emerald-700 font-bold hover:underline"
-              >
-                + {isAr ? 'إضافة وحدة قياس' : 'Add Unit'}
-              </button>
-            </div>
-
-            <div className="space-y-2">
-              {newUnits.map((u, index) => (
-                <div key={index} className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
-                  <input
-                    type="text"
-                    placeholder={isAr ? 'اسم الوحدة (مثال: كرتون)' : 'Unit Name'}
-                    value={u.nameAr}
-                    onChange={(e) => {
-                      const updated = [...newUnits];
-                      updated[index].nameAr = e.target.value;
-                      setNewUnits(updated);
-                    }}
-                    className="flex-1 px-2 py-1 rounded border border-slate-200 text-xs"
-                  />
-                  <div className="flex items-center gap-1">
-                    <span className="text-slate-400">=</span>
-                    <input
-                      type="number"
-                      placeholder={isAr ? 'المعامل' : 'Multiplier'}
-                      value={u.factor}
-                      onChange={(e) => {
-                        const updated = [...newUnits];
-                        updated[index].factor = parseFloat(e.target.value) || 1;
-                        setNewUnits(updated);
-                      }}
-                      className="w-16 px-2 py-1 rounded border border-slate-200 text-xs font-mono"
-                    />
-                    <span className="text-slate-500">{newBaseUnit}</span>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder={isAr ? 'باركود فريد' : 'Barcode'}
-                    value={u.barcode}
-                    onChange={(e) => {
-                      const updated = [...newUnits];
-                      updated[index].barcode = e.target.value;
-                      setNewUnits(updated);
-                    }}
-                    className="w-32 px-2 py-1 rounded border border-slate-200 text-xs font-mono"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setNewUnits(newUnits.filter((_, i) => i !== index))}
-                    className="text-rose-500 hover:text-rose-700 px-2 py-1"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-2">
-            <Button
-              variant="secondary"
-              type="button"
-              onClick={() => setShowNewItemModal(false)}
-            >
+        subtitle={
+          isAr
+            ? 'لكل وحدة تعبئة معامل تحويل وباركود وسعر بيع مستقل — المخزون يُحفظ دائماً بالوحدة الأساسية'
+            : 'Each packaging unit has its own conversion factor, barcode and sale price — stock is always held in the base unit'
+        }
+        icon={<Boxes className="w-5 h-5" />}
+        iconTone="emerald"
+        maxWidth="4xl"
+        footer={
+          <>
+            <Button variant="outline" type="button" onClick={() => setShowNewItemModal(false)}>
               {isAr ? 'إلغاء' : 'Cancel'}
             </Button>
             <Button
               variant="primary"
               type="submit"
+              form="create-item-form"
               disabled={isCreatingItem}
+              isLoading={isCreatingItem}
+              startIcon={!isCreatingItem ? <CheckCircle2 className="w-4 h-4" /> : undefined}
             >
-              {isCreatingItem ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'حفظ الصنف والوحدات' : 'Save Item')}
+              {isCreatingItem ? (isAr ? 'جاري الحفظ...' : 'Saving...') : isAr ? 'حفظ الصنف والوحدات' : 'Save Item & Units'}
             </Button>
-          </div>
+          </>
+        }
+      >
+        <form id="create-item-form" onSubmit={handleCreateItemSubmit} className="space-y-4">
+          <FormSection
+            tone="emerald"
+            icon={<Barcode className="w-4 h-4" />}
+            title={isAr ? 'تعريف الصنف' : 'Item Identification'}
+            description={isAr ? 'رمز الصنف فريد داخل المنشأة، والباركود الأساسي يخص الوحدة الأساسية' : 'SKU is unique per company; the primary barcode belongs to the base unit'}
+          >
+            <Field label={isAr ? 'اسم الصنف بالعربي' : 'Item Name (Arabic)'} required>
+              <input
+                value={newNameAr}
+                onChange={(e) => setNewNameAr(e.target.value)}
+                placeholder="مثال: زيت زيتون بكر ممتاز 500 مل"
+                required
+                className={fieldClass()}
+              />
+            </Field>
+            <Field label={isAr ? 'اسم الصنف بالإنجليزي' : 'Item Name (English)'}>
+              <input
+                dir="ltr"
+                value={newNameEn}
+                onChange={(e) => setNewNameEn(e.target.value)}
+                placeholder="e.g. Extra Virgin Olive Oil 500ml"
+                className={fieldClass()}
+              />
+            </Field>
+            <Field label={isAr ? 'رمز الصنف (SKU)' : 'SKU'} required>
+              <input
+                dir="ltr"
+                value={newSku}
+                onChange={(e) => setNewSku(e.target.value.toUpperCase())}
+                placeholder="ITM-NEW-001"
+                required
+                className={fieldClass({ mono: true })}
+              />
+            </Field>
+            <Field
+              label={isAr ? 'الباركود الأساسي' : 'Primary Barcode'}
+              hint={isAr ? 'اتركه فارغاً ليُولّد تلقائياً' : 'Leave empty to generate automatically'}
+            >
+              <div className="relative" dir="ltr">
+                <ScanLine className="pointer-events-none absolute inset-y-0 start-3 my-auto h-4 w-4 text-slate-400" />
+                <input
+                  dir="ltr"
+                  inputMode="numeric"
+                  value={newPrimaryBarcode}
+                  onChange={(e) => setNewPrimaryBarcode(e.target.value)}
+                  placeholder="628999123456"
+                  className={fieldClass({ mono: true, className: 'ps-9' })}
+                />
+              </div>
+            </Field>
+          </FormSection>
+
+          <FormSection
+            tone="amber"
+            icon={<Coins className="w-4 h-4" />}
+            title={isAr ? 'الوحدة الأساسية والتسعير' : 'Base Unit & Pricing'}
+            description={isAr ? 'الأسعار بالريال السعودي للوحدة الأساسية وقبل ضريبة القيمة المضافة' : 'Prices in SAR per base unit, excluding VAT'}
+            columns={3}
+          >
+            <Field label={isAr ? 'الوحدة الأساسية' : 'Base Unit'} required hint={isAr ? 'أصغر وحدة يُحفظ بها المخزون' : 'Smallest unit stock is held in'}>
+              <input
+                value={newBaseUnit}
+                onChange={(e) => setNewBaseUnit(e.target.value)}
+                placeholder="حبة / علبة / كجم"
+                required
+                className={fieldClass()}
+              />
+            </Field>
+            <Field label={isAr ? 'سعر البيع' : 'Sale Price'} required>
+              <div className="relative" dir="ltr">
+                <input
+                  dir="ltr"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newSellingPrice}
+                  onChange={(e) => setNewSellingPrice(e.target.value)}
+                  required
+                  className={fieldClass({ mono: true, className: 'pe-12' })}
+                />
+                <span className="pointer-events-none absolute inset-y-0 end-0 flex items-center pe-3 text-xs font-semibold text-slate-400">SAR</span>
+              </div>
+            </Field>
+            <Field
+              label={isAr ? 'تكلفة الشراء التقديرية' : 'Estimated Cost'}
+              hint={(() => {
+                const price = Math.round((parseFloat(newSellingPrice) || 0) * 100);
+                const cost = Math.round((parseFloat(newCost) || 0) * 100);
+                if (price <= 0 || cost <= 0) return undefined;
+                const marginPct = Math.round(((price - cost) * 1000) / price) / 10;
+                return isAr ? `هامش الربح: ${marginPct}%` : `Gross margin: ${marginPct}%`;
+              })()}
+            >
+              <div className="relative" dir="ltr">
+                <input
+                  dir="ltr"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={newCost}
+                  onChange={(e) => setNewCost(e.target.value)}
+                  className={fieldClass({ mono: true, className: 'pe-12' })}
+                />
+                <span className="pointer-events-none absolute inset-y-0 end-0 flex items-center pe-3 text-xs font-semibold text-slate-400">SAR</span>
+              </div>
+            </Field>
+          </FormSection>
+
+          <FormSection
+            tone="indigo"
+            icon={<Layers className="w-4 h-4" />}
+            title={isAr ? 'وحدات التعبئة الإضافية' : 'Packaging Units (Multi-UOM)'}
+            description={
+              isAr
+                ? `كل وحدة = عدد من «${newBaseUnit || 'الوحدة الأساسية'}»، ولها باركود فريد (القاعدة I4)`
+                : `Each unit = N × "${newBaseUnit || 'base unit'}", with its own unique barcode (Rule I4)`
+            }
+            columns={1}
+            actions={
+              <button
+                type="button"
+                onClick={() => {
+                  const factor = (newUnits.length + 1) * 12;
+                  const basePriceHalalas = Math.round((parseFloat(newSellingPrice) || 0) * 100);
+                  setNewUnits([
+                    ...newUnits,
+                    { nameAr: isAr ? 'كرتون' : 'Carton', factor, barcode: '', price: (basePriceHalalas * factor) / 100 },
+                  ]);
+                }}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white shadow-xs transition-colors hover:bg-indigo-700"
+              >
+                <Plus className="w-4 h-4" />
+                {isAr ? 'إضافة وحدة' : 'Add Unit'}
+              </button>
+            }
+          >
+            {newUnits.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-slate-300 py-6 text-center text-xs text-slate-500">
+                {isAr ? 'الصنف يُباع بالوحدة الأساسية فقط. أضف وحدة (كرتون، طبلية...) عند الحاجة.' : 'Sold in the base unit only. Add a unit (carton, pallet...) if needed.'}
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-slate-200">
+                <table className="w-full min-w-[640px] text-xs">
+                  <thead className="bg-slate-50 text-[11px] font-semibold text-slate-500">
+                    <tr>
+                      <th className="px-3 py-2 text-start">{isAr ? 'اسم الوحدة' : 'Unit Name'}</th>
+                      <th className="px-3 py-2 text-start w-44">{isAr ? 'معامل التحويل' : 'Conversion'}</th>
+                      <th className="px-3 py-2 text-start w-44">{isAr ? 'الباركود' : 'Barcode'}</th>
+                      <th className="px-3 py-2 text-start w-36">{isAr ? 'سعر البيع (﷼)' : 'Sale Price (SAR)'}</th>
+                      <th className="w-10" />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {newUnits.map((u, index) => {
+                      const update = (patch: Partial<(typeof newUnits)[number]>) =>
+                        setNewUnits(newUnits.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+                      return (
+                        <tr key={index} className="align-top">
+                          <td className="px-3 py-2">
+                            <input
+                              type="text"
+                              placeholder={isAr ? 'مثال: كرتون' : 'e.g. Carton'}
+                              value={u.nameAr}
+                              onChange={(e) => update({ nameAr: e.target.value })}
+                              className={fieldClass({ tone: 'indigo', className: 'min-h-[36px] py-1.5 text-xs' })}
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                dir="ltr"
+                                type="number"
+                                min="1"
+                                step="any"
+                                value={u.factor}
+                                onChange={(e) => update({ factor: parseFloat(e.target.value) || 1 })}
+                                className={fieldClass({ tone: 'indigo', mono: true, className: 'min-h-[36px] w-20 py-1.5 text-xs text-center' })}
+                              />
+                              <span className="whitespace-nowrap text-slate-500">× {newBaseUnit}</span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              dir="ltr"
+                              type="text"
+                              placeholder={isAr ? 'تلقائي' : 'Auto'}
+                              value={u.barcode}
+                              onChange={(e) => update({ barcode: e.target.value })}
+                              className={fieldClass({ tone: 'indigo', mono: true, className: 'min-h-[36px] py-1.5 text-xs' })}
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <input
+                              dir="ltr"
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={u.price}
+                              onChange={(e) => update({ price: parseFloat(e.target.value) || 0 })}
+                              className={fieldClass({ tone: 'indigo', mono: true, className: 'min-h-[36px] py-1.5 text-xs' })}
+                            />
+                          </td>
+                          <td className="px-1 py-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setNewUnits(newUnits.filter((_, i) => i !== index))}
+                              className="rounded-lg p-2 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                              title={isAr ? 'حذف الوحدة' : 'Remove unit'}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </FormSection>
         </form>
       </Modal>
     </div>

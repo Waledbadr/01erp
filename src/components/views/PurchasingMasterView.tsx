@@ -213,9 +213,15 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
           setPaymentSupplierId(sList[0].id);
         }
       }
-      if (itemsRes.ok) setItems(await itemsRes.json());
+      if (itemsRes.ok) {
+        // GET /inventory/items returns { items, count }
+        const iData = await itemsRes.json();
+        setItems(Array.isArray(iData) ? iData : (iData.items || []));
+      }
       if (whRes.ok) {
-        const wData = await whRes.json();
+        // GET /inventory/warehouses returns { warehouses }
+        const wRaw = await whRes.json();
+        const wData = Array.isArray(wRaw) ? wRaw : (wRaw.warehouses || []);
         setWarehouses(wData);
         if (wData.length > 0 && !billWarehouseId) {
           setBillWarehouseId(wData[0].id);
@@ -279,7 +285,7 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'Failed to post bill');
+        throw new Error(err.message || err.error || 'Failed to post bill');
       }
       setFeedback({
         type: 'success',
@@ -341,7 +347,7 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'Failed to create bill');
+        throw new Error(err.message || err.error || 'Failed to create bill');
       }
 
       const created = await res.json();
@@ -396,7 +402,7 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'Failed to create purchase order');
+        throw new Error(err.message || err.error || 'Failed to create purchase order');
       }
 
       const created = await res.json();
@@ -440,7 +446,7 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error || 'Failed to create payment');
+        throw new Error(err.message || err.error || 'Failed to create payment');
       }
 
       setFeedback({
@@ -461,7 +467,13 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
 
   // Handle Add Line to Bill
   const addBillLine = () => {
-    if (items.length === 0) return;
+    if (items.length === 0) {
+      setFeedback({
+        type: 'error',
+        message: isAr ? 'لا توجد أصناف معرّفة — أضف صنفاً من دليل الأصناف أولاً' : 'No items defined — add an item in the Product Master first',
+      });
+      return;
+    }
     const defaultItem = items[0];
     setBillLines([
       ...billLines,
@@ -478,7 +490,13 @@ export function PurchasingMasterView({ onNavigate }: PurchasingMasterViewProps) 
 
   // Handle Add Line to PO
   const addOrderLine = () => {
-    if (items.length === 0) return;
+    if (items.length === 0) {
+      setFeedback({
+        type: 'error',
+        message: isAr ? 'لا توجد أصناف معرّفة — أضف صنفاً من دليل الأصناف أولاً' : 'No items defined — add an item in the Product Master first',
+      });
+      return;
+    }
     const defaultItem = items[0];
     setOrderLines([
       ...orderLines,
