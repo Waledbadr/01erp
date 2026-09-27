@@ -8,9 +8,23 @@ export interface ModalProps {
   subtitle?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
-  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
+  /** Optional icon shown in a tinted badge beside the title. */
+  icon?: React.ReactNode;
+  iconTone?: 'emerald' | 'blue' | 'indigo' | 'amber' | 'slate' | 'violet';
+  maxWidth?: ModalWidth;
+  size?: ModalWidth;
 }
+
+type ModalWidth = 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
+
+const iconToneStyles: Record<NonNullable<ModalProps['iconTone']>, string> = {
+  emerald: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  blue: 'bg-blue-50 text-blue-700 border-blue-100',
+  indigo: 'bg-indigo-50 text-indigo-700 border-indigo-100',
+  amber: 'bg-amber-50 text-amber-700 border-amber-100',
+  slate: 'bg-slate-100 text-slate-700 border-slate-200',
+  violet: 'bg-violet-50 text-violet-700 border-violet-100',
+};
 
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
@@ -19,6 +33,8 @@ export const Modal: React.FC<ModalProps> = ({
   subtitle,
   children,
   footer,
+  icon,
+  iconTone = 'emerald',
   maxWidth,
   size,
 }) => {
@@ -47,7 +63,9 @@ export const Modal: React.FC<ModalProps> = ({
     lg: 'max-w-lg',
     xl: 'max-w-xl',
     '2xl': 'max-w-2xl',
+    '3xl': 'max-w-3xl',
     '4xl': 'max-w-4xl',
+    '5xl': 'max-w-5xl',
   };
 
   return (
@@ -59,10 +77,17 @@ export const Modal: React.FC<ModalProps> = ({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-            <div>
-              <h3 className="text-base font-bold text-slate-900">{title}</h3>
-              {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-6 py-4">
+            <div className="flex items-center gap-3 min-w-0">
+              {icon && (
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border ${iconToneStyles[iconTone]}`}>
+                  {icon}
+                </span>
+              )}
+              <div className="min-w-0">
+                <h3 className="text-base font-bold text-slate-900">{title}</h3>
+                {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+              </div>
             </div>
             <button
               onClick={onClose}
@@ -74,7 +99,7 @@ export const Modal: React.FC<ModalProps> = ({
           </div>
 
           {/* Body */}
-          <div className="px-6 py-5 max-h-[75vh] overflow-y-auto">{children}</div>
+          <div className={`px-6 py-5 overflow-y-auto ${footer ? 'max-h-[68vh]' : 'max-h-[75vh]'}`}>{children}</div>
 
           {/* Footer */}
           {footer && (

@@ -28,6 +28,7 @@ import {
   ExternalLink,
   Tag,
   Lock,
+  AlertTriangle,
 } from 'lucide-react';
 import { useI18n } from '../../i18n/context.js';
 import {
@@ -45,6 +46,7 @@ import {
 } from '../../lib/sales.js';
 import { InvoicePrintTemplate } from '../sales/InvoicePrintTemplate.js';
 import { ZatcaQRCode } from '../ui/ZatcaQRCode.js';
+import { FormSection, Field, ToggleCard, fieldClass } from '../ui/FormSection.js';
 import { DocumentActionModal } from '../documents/DocumentActionModal.js';
 import { DocumentDataPayload } from '../../lib/documents.js';
 import { CustomerPriceAgreementsTab } from '../sales/CustomerPriceAgreementsTab.js';
@@ -1388,11 +1390,11 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
       {/* ========================================================= */}
       {isCreateInvoiceOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-6xl max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95">
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+            <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 flex items-center justify-center">
                   <Receipt className="w-5 h-5" />
                 </div>
                 <div>
@@ -1414,14 +1416,19 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
             </div>
 
             {/* Modal Body / Form */}
-            <form onSubmit={handleCreateInvoice} className="p-6 overflow-y-auto space-y-5 text-xs flex-1">
-              {/* Type and Customer Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Invoice Type */}
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {isAr ? 'نوع الفاتورة الضريبية' : 'Invoice Type'} *
-                  </label>
+            <form id="create-invoice-form" onSubmit={handleCreateInvoice} className="p-6 overflow-y-auto space-y-5 flex-1 bg-slate-50/40">
+              <FormSection
+                tone="emerald"
+                icon={<FileText className="w-4 h-4" />}
+                title={isAr ? 'بيانات الفاتورة' : 'Invoice Details'}
+                description={
+                  isAr
+                    ? 'الفاتورة القياسية للمنشآت المسجلة ضريبياً، والمبسطة للأفراد والمبيعات النقدية'
+                    : 'Standard for VAT-registered businesses, simplified for consumers and cash sales'
+                }
+                columns={3}
+              >
+                <Field label={isAr ? 'نوع الفاتورة الضريبية' : 'Invoice Type'} required>
                   <select
                     value={newInvoiceType}
                     onChange={(e) => {
@@ -1438,60 +1445,46 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                         })
                       );
                     }}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-800"
+                    className={fieldClass()}
                   >
                     <option value="STANDARD_B2B">{isAr ? 'فاتورة ضريبية قياسية (منشآت B2B)' : 'Standard B2B Tax Invoice'}</option>
                     <option value="SIMPLIFIED_B2C">{isAr ? 'فاتورة ضريبية مبسطة (أفراد B2C)' : 'Simplified B2C Tax Invoice'}</option>
                   </select>
-                </div>
+                </Field>
 
-                {/* Customer */}
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {isAr ? 'العميل المشتري' : 'Buyer / Customer'} *
-                  </label>
+                <Field label={isAr ? 'العميل المشتري' : 'Buyer / Customer'} required>
                   <select
                     value={selectedCustomerId}
                     onChange={(e) => handleInvoiceCustomerChange(e.target.value)}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-800"
+                    className={fieldClass()}
                     required
                   >
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.nameAr} {c.vatNumber ? `(ضريبي: ${c.vatNumber})` : ''}
+                        {isAr ? c.nameAr : c.nameEn || c.nameAr}
                       </option>
                     ))}
                   </select>
-                </div>
+                </Field>
 
-                {/* Payment Method */}
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {isAr ? 'طريقة السداد' : 'Payment Method'} *
-                  </label>
+                <Field label={isAr ? 'طريقة السداد' : 'Payment Method'} required>
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-800"
+                    className={fieldClass()}
                   >
                     <option value="CREDIT_ACCOUNT">{isAr ? 'آجل / حساب ائتماني' : 'Credit Account'}</option>
                     <option value="CASH">{isAr ? 'نقدي (صندوق الكاشير)' : 'Cash'}</option>
                     <option value="MADA">{isAr ? 'شبكة مدى (نقاط البيع)' : 'Mada POS'}</option>
                     <option value="BANK_TRANSFER">{isAr ? 'تحويل بنكي' : 'Bank Transfer'}</option>
                   </select>
-                </div>
-              </div>
+                </Field>
 
-              {/* Warehouse & Notes */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {isAr ? 'مستودع الصرف (خصم المخزون)' : 'Issuing Warehouse'} *
-                  </label>
+                <Field label={isAr ? 'مستودع الصرف' : 'Issuing Warehouse'} required hint={isAr ? 'يُخصم منه المخزون عند الترحيل' : 'Stock is deducted from here on posting'}>
                   <select
                     value={selectedWarehouseId}
                     onChange={(e) => setSelectedWarehouseId(e.target.value)}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg font-medium text-slate-800"
+                    className={fieldClass()}
                   >
                     {warehouses.map((w) => (
                       <option key={w.id} value={w.id}>
@@ -1499,42 +1492,92 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                       </option>
                     ))}
                   </select>
-                </div>
+                </Field>
 
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    {isAr ? 'ملاحظات الفاتورة' : 'Invoice Notes'}
-                  </label>
+                <Field label={isAr ? 'ملاحظات الفاتورة' : 'Invoice Notes'} span={2}>
                   <input
                     type="text"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder={isAr ? 'أي شروط أو مراجع إضافية...' : 'Optional notes or reference...'}
-                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-800"
+                    placeholder={isAr ? 'أي شروط أو مراجع إضافية تظهر على الفاتورة...' : 'Optional terms or reference printed on the invoice...'}
+                    className={fieldClass()}
                   />
-                </div>
-              </div>
+                </Field>
+
+                {(() => {
+                  const buyer = customers.find((c) => c.id === selectedCustomerId);
+                  if (!buyer) return null;
+                  const missingVat = newInvoiceType === 'STANDARD_B2B' && !buyer.vatNumber;
+                  return (
+                    <div
+                      className={`col-span-full flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border px-4 py-3 text-xs ${
+                        missingVat ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-slate-50'
+                      }`}
+                    >
+                      <span className="flex items-center gap-2 font-bold text-slate-800">
+                        <User className="w-4 h-4 text-slate-500" />
+                        {isAr ? buyer.nameAr : buyer.nameEn || buyer.nameAr}
+                      </span>
+                      <span className="text-slate-600">
+                        {isAr ? 'الرقم الضريبي:' : 'VAT No.:'}{' '}
+                        <span className="font-mono font-semibold text-slate-800">{buyer.vatNumber || '—'}</span>
+                      </span>
+                      {buyer.crNumber && (
+                        <span className="text-slate-600">
+                          {isAr ? 'السجل التجاري:' : 'CR:'} <span className="font-mono font-semibold text-slate-800">{buyer.crNumber}</span>
+                        </span>
+                      )}
+                      {buyer.creditHold && (
+                        <span className="inline-flex items-center gap-1 rounded-md bg-rose-100 px-2 py-0.5 font-bold text-rose-800">
+                          <Lock className="w-3 h-3" />
+                          {isAr ? 'حظر ائتماني' : 'Credit Hold'}
+                        </span>
+                      )}
+                      {missingVat && (
+                        <span className="flex items-center gap-1.5 font-semibold text-amber-800">
+                          <AlertTriangle className="w-4 h-4" />
+                          {isAr
+                            ? 'العميل بدون رقم ضريبي — استخدم الفاتورة المبسطة أو أضف رقمه الضريبي'
+                            : 'Buyer has no VAT number — use a simplified invoice or add the VAT number'}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+              </FormSection>
 
               {/* Line Items Table */}
-              <div className="border border-slate-200 rounded-xl overflow-hidden">
-                <div className="p-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center">
-                  <h4 className="font-bold text-slate-800">
-                    {isAr ? 'بنود الفاتورة والمنتجات' : 'Invoice Line Items'}
-                  </h4>
+              <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+                <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex justify-between items-center gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-emerald-100 bg-emerald-50 text-emerald-700">
+                      <Layers className="w-4 h-4" />
+                    </span>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">
+                        {isAr ? 'بنود الفاتورة' : 'Invoice Lines'}
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        {isAr ? `${invoiceLines.length} بند — الضريبة تُحسب لكل بند وتُقرّب نصف للأعلى` : `${invoiceLines.length} line(s) — VAT is calculated and rounded half-up per line`}
+                      </p>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     onClick={handleAddInvoiceLine}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-md transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 px-3 py-2 rounded-lg transition-colors shadow-xs"
                   >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>{isAr ? 'إضافة بند' : 'Add Item'}</span>
+                    <Plus className="w-4 h-4" />
+                    <span>{isAr ? 'إضافة بند' : 'Add Line'}</span>
                   </button>
                 </div>
 
-                <table className="w-full text-xs">
-                  <thead className="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
+                <div className="overflow-x-auto">
+                <table className="w-full min-w-[880px] text-xs">
+                  <thead className="bg-white text-slate-500 text-[11px] uppercase tracking-wide font-semibold border-b border-slate-200">
                     <tr>
-                      <th className="p-2 text-start w-48">{isAr ? 'الصنف' : 'Item'}</th>
+                      <th className="px-2 py-2.5 text-center w-8">#</th>
+                      <th className="p-2 text-start w-56">{isAr ? 'الصنف' : 'Item'}</th>
                       <th className="p-2 text-start w-32">{isAr ? 'الوحدة' : 'Unit'}</th>
                       <th className="p-2 text-center w-20">{isAr ? 'الكمية' : 'Qty'}</th>
                       <th className="p-2 text-end w-28">{isAr ? 'السعر (﷼)' : 'Price'}</th>
@@ -1560,13 +1603,14 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                       });
 
                       return (
-                        <tr key={idx} className={`hover:bg-slate-50/50 ${agreement ? 'bg-amber-50/20' : ''}`}>
+                        <tr key={idx} className={`align-top hover:bg-slate-50/50 ${agreement ? 'bg-amber-50/20' : ''}`}>
+                          <td className="px-2 pt-4 text-center font-mono text-[11px] text-slate-400">{idx + 1}</td>
                           {/* Item Picker */}
                           <td className="p-2">
                             <select
                               value={line.itemId}
                               onChange={(e) => handleUpdateInvoiceLine(idx, 'itemId', e.target.value)}
-                              className="w-full p-1.5 bg-white border border-slate-300 rounded text-xs"
+                              className={fieldClass({ className: 'text-xs min-h-[36px] py-1.5' })}
                             >
                               {items.map((itOption) => (
                                 <option key={itOption.id} value={itOption.id}>
@@ -1595,10 +1639,10 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                                 value={line.uomId}
                                 onChange={(e) => handleUpdateInvoiceLine(idx, 'uomId', e.target.value)}
                                 disabled={isStrict}
-                                className={`w-full p-1.5 border rounded text-xs ${
+                                className={`w-full min-h-[36px] px-2 py-1.5 border rounded-lg text-xs focus:outline-hidden focus:ring-2 focus:ring-emerald-100 ${
                                   isStrict
                                     ? 'bg-slate-100 text-slate-700 border-amber-300 cursor-not-allowed font-medium'
-                                    : 'bg-white border-slate-300'
+                                    : 'bg-white border-slate-300 focus:border-emerald-600'
                                 }`}
                                 title={isStrict ? (isAr ? 'الوحدة معتمدة ومقفلة في اتفاقية تسعير العميل' : 'Unit locked by customer price agreement') : undefined}
                               >
@@ -1622,7 +1666,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                               step="any"
                               value={line.quantity}
                               onChange={(e) => handleUpdateInvoiceLine(idx, 'quantity', parseFloat(e.target.value) || 0)}
-                              className="w-16 p-1.5 text-center font-mono font-bold bg-white border border-slate-300 rounded text-xs"
+                              className="w-20 min-h-[36px] px-2 py-1.5 text-center font-mono font-bold bg-white border border-slate-300 rounded-lg text-xs focus:outline-hidden focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
                               required
                             />
                           </td>
@@ -1638,7 +1682,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                                 onChange={(e) => handleUpdateInvoiceLine(idx, 'unitPriceSar', parseFloat(e.target.value) || 0)}
                                 disabled={isStrict}
                                 readOnly={isStrict}
-                                className={`w-24 p-1.5 text-end font-mono border rounded text-xs ${
+                                className={`w-28 min-h-[36px] px-2 py-1.5 text-end font-mono border rounded-lg text-xs focus:outline-hidden focus:ring-2 focus:ring-emerald-100 ${
                                   isStrict
                                     ? 'bg-amber-50 text-amber-900 border-amber-300 font-bold cursor-not-allowed'
                                     : 'bg-white border-slate-300'
@@ -1662,7 +1706,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                               value={line.discountPercent}
                               onChange={(e) => handleUpdateInvoiceLine(idx, 'discountPercent', parseFloat(e.target.value) || 0)}
                               disabled={isStrict && (agreement?.fixedDiscountPercent !== undefined && agreement.fixedDiscountPercent > 0)}
-                              className={`w-14 p-1.5 text-center font-mono border rounded text-xs ${
+                              className={`w-16 min-h-[36px] px-2 py-1.5 text-center font-mono border rounded-lg text-xs focus:outline-hidden focus:ring-2 focus:ring-emerald-100 ${
                                 isStrict && agreement?.fixedDiscountPercent
                                   ? 'bg-amber-50 text-amber-900 border-amber-300'
                                   : 'bg-white border-slate-300'
@@ -1671,17 +1715,17 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                           </td>
 
                           {/* Taxable */}
-                          <td className="p-2 text-end font-mono text-slate-700">
+                          <td className="p-2 pt-4 text-end font-mono text-slate-700">
                             {calc.taxableAmountSar.toFixed(2)}
                           </td>
 
                           {/* Tax Amount */}
-                          <td className="p-2 text-end font-mono text-emerald-800">
+                          <td className="p-2 pt-4 text-end font-mono text-emerald-800">
                             {calc.taxAmountSar.toFixed(2)}
                           </td>
 
                           {/* Line Total */}
-                          <td className="p-2 text-end font-mono font-bold text-slate-900">
+                          <td className="p-2 pt-4 text-end font-mono font-bold text-slate-900">
                             {calc.totalAmountSar.toFixed(2)}
                           </td>
 
@@ -1691,7 +1735,8 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                               type="button"
                               onClick={() => handleRemoveInvoiceLine(idx)}
                               disabled={invoiceLines.length <= 1}
-                              className="text-slate-400 hover:text-rose-600 disabled:opacity-30"
+                              className="mt-1 p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-30"
+                              title={isAr ? 'حذف البند' : 'Remove line'}
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -1701,69 +1746,70 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                     })}
                   </tbody>
                 </table>
+                </div>
               </div>
 
               {/* Totals Summary Box & Post Option */}
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={postImmediately}
-                      onChange={(e) => setPostImmediately(e.target.checked)}
-                      className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
-                    />
-                    <span className="font-semibold text-slate-800">
-                      {isAr
-                        ? 'ترحيل فوري إلى الأستاذ العام وتخفيض المخزون'
-                        : 'Post immediately to GL and deduct stock'}
-                    </span>
-                  </label>
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                <ToggleCard
+                  checked={postImmediately}
+                  onChange={setPostImmediately}
+                  title={isAr ? 'ترحيل فوري إلى الأستاذ العام' : 'Post immediately to the General Ledger'}
+                  description={
+                    isAr
+                      ? 'يُنشأ القيد المحاسبي ويُخصم المخزون فوراً، وتُرسل الفاتورة إلى طابور فاتورة (ZATCA). ألغِ التحديد للحفظ كمسودة.'
+                      : 'Creates the journal entry, deducts stock and queues the invoice for ZATCA. Untick to save as a draft.'
+                  }
+                />
 
-                <div className="text-end space-y-1 w-full sm:w-64">
+                <div className="rounded-xl border border-slate-200 bg-white p-4 text-xs space-y-2">
                   <div className="flex justify-between text-slate-600">
-                    <span>{isAr ? 'الإجمالي قبل الضريبة:' : 'Subtotal:'}</span>
+                    <span>{isAr ? 'الإجمالي قبل الضريبة' : 'Subtotal'}</span>
                     <span className="font-mono">{calculatedNewInvoiceTotals.subtotalSar.toFixed(2)} ﷼</span>
                   </div>
                   {calculatedNewInvoiceTotals.discountTotalSar > 0 && (
                     <div className="flex justify-between text-amber-700">
-                      <span>{isAr ? 'إجمالي الخصم:' : 'Discount:'}</span>
+                      <span>{isAr ? 'إجمالي الخصم' : 'Discount'}</span>
                       <span className="font-mono">-{calculatedNewInvoiceTotals.discountTotalSar.toFixed(2)} ﷼</span>
                     </div>
                   )}
                   <div className="flex justify-between text-emerald-800 font-semibold">
-                    <span>{isAr ? 'ضريبة القيمة المضافة 15%:' : 'VAT 15%:'}</span>
+                    <span>{isAr ? 'ضريبة القيمة المضافة 15%' : 'VAT 15%'}</span>
                     <span className="font-mono">{calculatedNewInvoiceTotals.taxTotalSar.toFixed(2)} ﷼</span>
                   </div>
-                  <div className="flex justify-between text-sm font-bold text-slate-900 border-t border-slate-300 pt-1">
-                    <span>{isAr ? 'المجموع النهائي:' : 'Grand Total:'}</span>
-                    <span className="font-mono text-emerald-950 font-extrabold text-base">
+                  <div className="flex justify-between items-center border-t border-slate-200 pt-2">
+                    <span className="text-sm font-bold text-slate-900">{isAr ? 'المجموع النهائي' : 'Grand Total'}</span>
+                    <span className="font-mono text-lg font-extrabold text-emerald-800">
                       {calculatedNewInvoiceTotals.totalAmountSar.toFixed(2)} ﷼
                     </span>
                   </div>
                 </div>
               </div>
+            </form>
 
-              {/* Actions */}
-              <div className="flex justify-end items-center gap-2 pt-2">
+            {/* Sticky footer */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 bg-white px-6 py-3.5">
+              <div className="text-xs text-slate-500">
+                {isAr ? 'الإجمالي المستحق:' : 'Amount due:'}{' '}
+                <span className="font-mono text-sm font-extrabold text-slate-900">
+                  {calculatedNewInvoiceTotals.totalAmountSar.toFixed(2)} ﷼
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setIsCreateInvoiceOpen(false)}
-                  className="px-4 py-2 font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                  className="min-h-[42px] px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
                 >
                   {isAr ? 'إلغاء' : 'Cancel'}
                 </button>
                 <button
                   type="submit"
+                  form="create-invoice-form"
                   disabled={actionLoading}
-                  className="inline-flex items-center gap-1.5 px-6 py-2 font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg transition-colors shadow-xs"
+                  className="inline-flex min-h-[42px] items-center gap-2 px-6 py-2 text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 rounded-lg transition-colors shadow-xs"
                 >
-                  {actionLoading ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <FileCheck className="w-4 h-4" />
-                  )}
+                  {actionLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileCheck className="w-4 h-4" />}
                   <span>
                     {postImmediately
                       ? isAr
@@ -1775,7 +1821,7 @@ export const SalesInvoicesView: React.FC<SalesInvoicesViewProps> = ({ onNavigate
                   </span>
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
